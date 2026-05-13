@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4A6E9A">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E5E5EA;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+}
+
+.calc {
+  width: min(360px, 100vw);
+  background: #fff;
+  border-radius: clamp(0px, 4vw, 28px);
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* ── DISPLAY ── */
+.display {
+  padding: 24px 22px 20px;
+  height: clamp(190px, 52vw, 230px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background 0.25s ease;
+  border-radius: clamp(0px, 4vw, 28px) clamp(0px, 4vw, 28px) 0 0;
+}
+.display.sci  { background: #4A6E9A; }
+.display.norm { background: #C75F56; }
+.display.curr { background: #4A8E7C; }
+
+.expr {
+  font-size: clamp(15px, 4.5vw, 19px);
+  color: rgba(255,255,255,0.72);
+  min-height: 18px;
+  line-height: 1.5;
+  word-break: break-all;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.curr-label {
+  font-size: clamp(13px, 3.8vw, 15px);
+  color: rgba(255,255,255,0.65);
+  display: none;
+  margin-top: 4px;
+}
+.display.curr .curr-label { display: block; }
+
+.result {
+  font-weight: 700;
+  color: #fff;
+  text-align: right;
+  line-height: 1;
+  letter-spacing: -1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: font-size 0.1s;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  padding: 12px 14px 0;
+  gap: 12px;
+}
+.tab {
+  background: none;
+  border: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #AAAAAA;
+  cursor: pointer;
+  padding-bottom: 10px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tab.active-sci  { color: #4A6E9A; border-color: #4A6E9A; }
+.tab.active-norm { color: #C75F56; border-color: #C75F56; }
+.tab.active-curr { color: #4A8E7C; border-color: #4A8E7C; }
+
+.divider { height: 1px; background: #EFEFEF; }
+
+/* ── SCIENTIFIC BUTTONS ── */
+.sci-wrap {
+  padding: 6px 14px 2px;
+  transition: opacity 0.2s;
+}
+.sci-wrap.off {
+  opacity: 0.15;
+  pointer-events: none;
+}
+.sci-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.sb {
+  height: clamp(32px, 9vw, 36px);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  white-space: nowrap;
+  user-select: none;
+}
+.sb:hover  { background: #F2F2F5; }
+.sb:active { background: #E8E8EC; }
+.sb.empty  { cursor: default; pointer-events: none; }
+.sb.empty:hover { background: none; }
+.sb sup { font-size: 7px; line-height: 0; vertical-align: super; }
+.sb.arrow { font-size: 17px; color: #999; }
+
+/* ── CURRENCY SECTION ── */
+.curr-wrap {
+  padding: 10px 14px 6px;
+  display: none;
+}
+.curr-wrap.visible { display: block; }
+
+.pills-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 38px;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 6px 12px;
+  background: #F5F5F7;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  border: 2px solid transparent;
+  user-select: none;
+  transition: all 0.15s;
+}
+.pill.selected {
+  background: rgba(74,142,124,0.12);
+  border-color: #4A8E7C;
+  color: #4A8E7C;
+}
+.pill-x {
+  font-size: 16px;
+  color: #999;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.pill-x:hover { color: #e44; }
+
+.add-pill {
+  width: 34px;
+  height: 34px;
+  background: #F5F5F7;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  line-height: 1;
+}
+.add-pill:hover { background: #EBEBED; }
+
+.rate-line {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #AAAAAA;
+  min-height: 16px;
+}
+
+/* ── NUMERIC BUTTONS ── */
+.num-wrap { padding: 8px 14px 18px; }
+.num-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+.nb {
+  height: clamp(46px, 13vw, 52px);
+  background: #F5F5F7;
+  border: none;
+  border-radius: clamp(10px, 3vw, 14px);
+  font-size: clamp(16px, 4.8vw, 19px);
+  color: #222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  font-weight: 400;
+  user-select: none;
+}
+.nb:hover  { background: #EBEBED; }
+.nb:active { background: #DEDEE0; }
+.nb.sym { font-size: clamp(20px, 5.5vw, 24px); }
+.nb.txt { font-size: clamp(12px, 3.8vw, 15px); font-weight: 600; }
+.nb.empty { background: none; pointer-events: none; }
+.nb.eq  { color: #fff; font-size: clamp(18px, 5.5vw, 22px); font-weight: 500; }
+.nb.eq:hover  { opacity: 0.88; }
+.nb.eq:active { opacity: 0.78; }
+.nb.dimmed { opacity: 0.25; pointer-events: none; }
+
+/* ── OVERLAY ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+  transition: background 0.25s;
+}
+.overlay.open {
+  background: rgba(0,0,0,0.45);
+  pointer-events: all;
+}
+.overlay-panel {
+  width: min(360px, 100vw);
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 8px 16px 24px;
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.overlay.open .overlay-panel { transform: translateY(0); }
+
+.overlay-handle {
+  width: 36px;
+  height: 4px;
+  background: #E0E0E0;
+  border-radius: 2px;
+  margin: 6px auto 14px;
+}
+.curr-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #E8E8E8;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 10px;
+  color: #222;
+}
+.curr-search:focus { border-color: #4A8E7C; }
+
+.curr-list {
+  overflow-y: auto;
+  flex: 1;
+}
+.curr-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid #F5F5F5;
+  user-select: none;
+}
+.curr-item:hover  { background: #F8F8F8; }
+.curr-item:active { background: #F0F0F0; }
+.curr-flag { font-size: 22px; width: 28px; text-align: center; }
+.curr-item-info { flex: 1; }
+.curr-item-code { font-weight: 700; font-size: 14px; color: #222; }
+.curr-item-name { font-size: 12px; color: #555; }
+.curr-item-country { font-size: 11px; color: #999; }
+.curr-item-check { font-size: 16px; color: #4A8E7C; min-width: 20px; text-align: right; }
+</style>
+</head>
+<body>
+
+<div class="calc">
+
+  <!-- Display -->
+  <div class="display sci" id="disp">
+    <div class="expr"       id="exprEl"></div>
+    <div class="curr-label" id="currLabel"></div>
+    <div class="result"     id="resultEl">0</div>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="tabs">
+    <button class="tab active-sci" id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
+    <button class="tab"            id="tabNorm" onclick="setMode('norm')">NORMAL</button>
+    <button class="tab"            id="tabCurr" onclick="setMode('curr')">CURRENCY</button>
+  </div>
+  <div class="divider"></div>
+
+  <!-- Scientific section -->
+  <div class="sci-wrap" id="sciWrap">
+    <div class="sci-grid">
+      <button class="sb"       onclick="ins('abs(')">Abs</button>
+      <button class="sb"       onclick="insPow(3)">x³</button>
+      <button class="sb arrow">‹</button>
+      <button class="sb arrow">›</button>
+      <button class="sb"       onclick="insPow(2)">x²</button>
+      <button class="sb"       onclick="ins('^')">x<sup style="font-size:8px;margin-left:1px">□</sup></button>
+      <button class="sb"       onclick="ins('mod ')">mod</button>
+      <button class="sb"       onclick="ins('sqrt(')">√</button>
+      <button class="sb"       onclick="ins('3.14159265')">π</button>
+      <button class="sb"       onclick="ins('2.71828183')">e</button>
+      <button class="sb"       onclick="ins('log(')">Log</button>
+      <button class="sb"       onclick="ins('ln(')">ln</button>
+      <button class="sb" id="hypBtn" onclick="toggleHyp()">hyp</button>
+      <button class="sb" id="sinBtn" onclick="insTrig('sin')">sin</button>
+      <button class="sb"             onclick="ins('(')">&thinsp;(&thinsp;</button>
+      <button class="sb"             onclick="ins(')')">&thinsp;)&thinsp;</button>
+      <button class="sb" id="cosBtn" onclick="insTrig('cos')">cos</button>
+      <button class="sb" id="tanBtn" onclick="insTrig('tan')">tan</button>
+    </div>
+  </div>
+
+  <!-- Currency section -->
+  <div class="curr-wrap" id="currWrap">
+    <div class="pills-row" id="pillsRow">
+      <button class="add-pill" onclick="openOverlay()">+</button>
+    </div>
+    <div class="rate-line" id="rateLine">Loading rates...</div>
+  </div>
+
+  <!-- Numeric section -->
+  <div class="num-wrap">
+    <div class="num-grid">
+      <button class="nb"     onclick="ins('7')">7</button>
+      <button class="nb"     onclick="ins('8')">8</button>
+      <button class="nb"     onclick="ins('9')">9</button>
+      <button class="nb txt" id="delBtn"  onclick="doDelete()">DEL</button>
+      <button class="nb txt" id="acBtn"   onclick="doClear()">AC</button>
+      <button class="nb"     onclick="ins('4')">4</button>
+      <button class="nb"     onclick="ins('5')">5</button>
+      <button class="nb"     onclick="ins('6')">6</button>
+      <button class="nb sym" id="mulBtn"  onclick="ins('×')">×</button>
+      <button class="nb sym" id="divBtn"  onclick="ins('÷')">÷</button>
+      <button class="nb"     onclick="ins('1')">1</button>
+      <button class="nb"     onclick="ins('2')">2</button>
+      <button class="nb"     onclick="ins('3')">3</button>
+      <button class="nb sym" id="addBtn"  onclick="ins('+')">+</button>
+      <button class="nb sym" id="subBtn"  onclick="ins('−')">−</button>
+      <button class="nb"     onclick="ins('0')">0</button>
+      <button class="nb"     onclick="ins('.')">.</button>
+      <button class="nb txt" id="signBtn" onclick="toggleSign()">+/-</button>
+      <button class="nb txt" id="ansBtn"  onclick="insAns()">Ans</button>
+      <button class="nb eq"  id="eqBtn"   onclick="doCalc()">=</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Currency overlay -->
+<div class="overlay" id="overlay" onclick="handleOverlayBg(event)">
+  <div class="overlay-panel">
+    <div class="overlay-handle"></div>
+    <input class="curr-search" id="currSearch" type="text"
+           placeholder="Search by currency or country..."
+           oninput="filterCurrencies(this.value)">
+    <div class="curr-list" id="currList"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── CONSTANTS ────────────────────────────────────────────
+const SCI_COLOR  = '#4A6E9A';
+const NORM_COLOR = '#C75F56';
+const CURR_COLOR = '#4A8E7C';
+
+// ── CALC STATE ───────────────────────────────────────────
+let expr    = '';
+let lastAns = null;
+let hypOn   = false;
+let mode    = 'sci';
+let afterEq = false;
+
+// ── CURRENCY STATE ───────────────────────────────────────
+let activeCurrencies = JSON.parse(localStorage.getItem('activeCurrencies') || '["USD","EUR"]');
+let selectedCurrency = activeCurrencies[0] || 'USD';
+let rates    = {};
+let currExpr = '';
+
+const ALL_CURRENCIES = [
+  { code:'USD', name:'US Dollar',           country:'United States',     flag:'🇺🇸' },
+  { code:'EUR', name:'Euro',                country:'Eurozone · Greece, France, Germany, Italy, Spain', flag:'🇪🇺' },
+  { code:'GBP', name:'British Pound',       country:'United Kingdom',    flag:'🇬🇧' },
+  { code:'JPY', name:'Japanese Yen',        country:'Japan',             flag:'🇯🇵' },
+  { code:'CHF', name:'Swiss Franc',         country:'Switzerland',       flag:'🇨🇭' },
+  { code:'AUD', name:'Australian Dollar',   country:'Australia',         flag:'🇦🇺' },
+  { code:'CAD', name:'Canadian Dollar',     country:'Canada',            flag:'🇨🇦' },
+  { code:'CNY', name:'Chinese Yuan',        country:'China',             flag:'🇨🇳' },
+  { code:'SGD', name:'Singapore Dollar',    country:'Singapore',         flag:'🇸🇬' },
+  { code:'HKD', name:'Hong Kong Dollar',    country:'Hong Kong',         flag:'🇭🇰' },
+  { code:'NOK', name:'Norwegian Krone',     country:'Norway',            flag:'🇳🇴' },
+  { code:'SEK', name:'Swedish Krona',       country:'Sweden',            flag:'🇸🇪' },
+  { code:'DKK', name:'Danish Krone',        country:'Denmark',           flag:'🇩🇰' },
+  { code:'PLN', name:'Polish Zloty',        country:'Poland',            flag:'🇵🇱' },
+  { code:'CZK', name:'Czech Koruna',        country:'Czech Republic',    flag:'🇨🇿' },
+  { code:'HUF', name:'Hungarian Forint',    country:'Hungary',           flag:'🇭🇺' },
+  { code:'RON', name:'Romanian Leu',        country:'Romania',           flag:'🇷🇴' },
+  { code:'TRY', name:'Turkish Lira',        country:'Turkey',            flag:'🇹🇷' },
+  { code:'AED', name:'UAE Dirham',          country:'UAE / Dubai',       flag:'🇦🇪' },
+  { code:'SAR', name:'Saudi Riyal',         country:'Saudi Arabia',      flag:'🇸🇦' },
+  { code:'EGP', name:'Egyptian Pound',      country:'Egypt',             flag:'🇪🇬' },
+  { code:'JOD', name:'Jordanian Dinar',     country:'Jordan',            flag:'🇯🇴' },
+  { code:'THB', name:'Thai Baht',           country:'Thailand',          flag:'🇹🇭' },
+  { code:'IDR', name:'Indonesian Rupiah',   country:'Indonesia / Bali',  flag:'🇮🇩' },
+  { code:'MYR', name:'Malaysian Ringgit',   country:'Malaysia',          flag:'🇲🇾' },
+  { code:'PHP', name:'Philippine Peso',     country:'Philippines',       flag:'🇵🇭' },
+  { code:'KRW', name:'South Korean Won',    country:'South Korea',       flag:'🇰🇷' },
+  { code:'INR', name:'Indian Rupee',        country:'India',             flag:'🇮🇳' },
+  { code:'BRL', name:'Brazilian Real',      country:'Brazil',            flag:'🇧🇷' },
+  { code:'ZAR', name:'South African Rand',  country:'South Africa',      flag:'🇿🇦' },
+  { code:'NZD', name:'New Zealand Dollar',  country:'New Zealand',       flag:'🇳🇿' },
+  { code:'MXN', name:'Mexican Peso',        country:'Mexico',            flag:'🇲🇽' },
+  { code:'GEL', name:'Georgian Lari',       country:'Georgia',           flag:'🇬🇪' },
+  { code:'UAH', name:'Ukrainian Hryvnia',   country:'Ukraine',           flag:'🇺🇦' },
+  { code:'CLP', name:'Chilean Peso',        country:'Chile',             flag:'🇨🇱' },
+  { code:'MAD', name:'Moroccan Dirham',     country:'Morocco',           flag:'🇲🇦' },
+  { code:'TND', name:'Tunisian Dinar',      country:'Tunisia',           flag:'🇹🇳' },
+  { code:'COP', name:'Colombian Peso',      country:'Colombia',          flag:'🇨🇴' },
+  { code:'ARS', name:'Argentine Peso',      country:'Argentina',         flag:'🇦🇷' },
+  { code:'VND', name:'Vietnamese Dong',     country:'Vietnam',           flag:'🇻🇳' },
+];
+
+// ── MODE ─────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  const isSci  = m === 'sci';
+  const isCurr = m === 'curr';
+  const color  = isSci ? SCI_COLOR : isCurr ? CURR_COLOR : NORM_COLOR;
+
+  document.getElementById('disp').className    = 'display ' + m;
+  document.getElementById('tabSci').className  = 'tab' + (m === 'sci'  ? ' active-sci'  : '');
+  document.getElementById('tabNorm').className = 'tab' + (m === 'norm' ? ' active-norm' : '');
+  document.getElementById('tabCurr').className = 'tab' + (m === 'curr' ? ' active-curr' : '');
+
+  const sciWrap  = document.getElementById('sciWrap');
+  const currWrap = document.getElementById('currWrap');
+  if (isCurr) {
+    sciWrap.style.display  = 'none';
+    currWrap.className     = 'curr-wrap visible';
+    dimCalcButtons(true);
+    if (!Object.keys(rates).length) fetchRates(); else { refreshCurrency(); renderPills(); }
+  } else {
+    sciWrap.style.display  = '';
+    currWrap.className     = 'curr-wrap';
+    sciWrap.className      = 'sci-wrap' + (isSci ? '' : ' off');
+    dimCalcButtons(false);
+  }
+
+  ['delBtn','acBtn','mulBtn','divBtn','addBtn','subBtn','ansBtn','signBtn'].forEach(id => {
+    document.getElementById(id).style.color = color;
+  });
+  document.getElementById('eqBtn').style.background = color;
+
+  if (hypOn && !isSci) { hypOn = false; styleHyp(); }
+}
+
+function dimCalcButtons(on) {
+  ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn','eqBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (on) el.classList.add('dimmed');
+    else    el.classList.remove('dimmed');
+  });
+}
+
+// ── CALC INPUT ───────────────────────────────────────────
+function ins(ch) {
+  if (mode === 'curr') {
+    if (/^[0-9]$/.test(ch) || ch === '.') currIns(ch);
+    return;
+  }
+  if (afterEq) {
+    afterEq = false;
+    const isNewStart = /^[0-9.(]$/.test(ch) || /^[a-z]/.test(ch);
+    expr = isNewStart ? ch : fmtNum(lastAns) + ch;
+  } else {
+    expr += ch;
+  }
+  refresh();
+}
+
+function insPow(n) {
+  if (mode === 'curr') return;
+  afterEq = false;
+  expr += '^' + n;
+  refresh();
+}
+
+function insTrig(fn) {
+  if (mode === 'curr') return;
+  const name = (hypOn ? fn + 'h' : fn) + '(';
+  if (hypOn) { hypOn = false; styleHyp(); }
+  ins(name);
+}
+
+function toggleSign() {
+  if (mode === 'curr') return;
+  if (afterEq && lastAns !== null) {
+    const neg = -lastAns;
+    lastAns = neg;
+    expr    = fmtNum(neg);
+    afterEq = false;
+    refresh();
+    return;
+  }
+  if (!expr) return;
+  if (expr.startsWith('−') || expr.startsWith('-')) expr = expr.slice(1);
+  else expr = '−' + expr;
+  refresh();
+}
+
+function insAns() {
+  if (mode === 'curr') return;
+  if (lastAns !== null) ins(fmtNum(lastAns));
+}
+
+function toggleHyp() {
+  hypOn = !hypOn;
+  styleHyp();
+}
+
+function styleHyp() {
+  const btn   = document.getElementById('hypBtn');
+  const color = mode === 'sci' ? SCI_COLOR : NORM_COLOR;
+  btn.style.fontWeight = hypOn ? '700' : '400';
+  btn.style.color      = hypOn ? color : '#555';
+}
+
+function doDelete() {
+  if (mode === 'curr') { currExpr = currExpr.slice(0, -1); refreshCurrency(); return; }
+  afterEq = false;
+  if (!expr) return;
+  const fnMatch = expr.match(/(sin|cos|tan|sinh|cosh|tanh|abs|sqrt|log|ln)\($/);
+  if (fnMatch)                   expr = expr.slice(0, -fnMatch[0].length);
+  else if (expr.endsWith('mod ')) expr = expr.slice(0, -4);
+  else                            expr = expr.slice(0, -1);
+  refresh();
+}
+
+function doClear() {
+  if (mode === 'curr') { currExpr = ''; refreshCurrency(); return; }
+  afterEq = false;
+  expr    = '';
+  refresh();
+}
+
+// ── CALC ENGINE ──────────────────────────────────────────
+function doCalc() {
+  if (mode === 'curr') return;
+  if (!expr) return;
+  let res;
+  try   { res = evalExpr(expr); }
+  catch { showResult('Error'); return; }
+  if (isNaN(res))     { showResult('Error'); return; }
+  if (!isFinite(res)) { showResult(res > 0 ? '∞' : '-∞'); return; }
+  lastAns = res;
+  document.getElementById('exprEl').textContent = expr;
+  setResult(fmtNum(res));
+  expr    = fmtNum(res);
+  afterEq = true;
+}
+
+function evalExpr(str) {
+  const s = str
+    .replace(/×/g,          '*')
+    .replace(/÷/g,          '/')
+    .replace(/−/g,          '-')
+    .replace(/\^/g,         '**')
+    .replace(/\bmod\b\s*/g, '%')
+    .replace(/abs\(/g,      'Math.abs(')
+    .replace(/sqrt\(/g,     'Math.sqrt(')
+    .replace(/log\(/g,      'Math.log10(')
+    .replace(/ln\(/g,       'Math.log(')
+    .replace(/sinh\(/g,     'Math.sinh(')
+    .replace(/cosh\(/g,     'Math.cosh(')
+    .replace(/tanh\(/g,     'Math.tanh(')
+    .replace(/sin\(/g,      '_s(')
+    .replace(/cos\(/g,      '_c(')
+    .replace(/tan\(/g,      '_t(');
+  const D = Math.PI / 180;
+  return new Function('_s','_c','_t', '"use strict"; return (' + s + ')')(
+    x => Math.sin(x * D),
+    x => Math.cos(x * D),
+    x => Math.tan(x * D)
+  );
+}
+
+function fmtNum(n) {
+  if (!isFinite(n)) return n > 0 ? '∞' : '-∞';
+  if (Number.isInteger(n) && Math.abs(n) < 1e15) return String(n);
+  return String(parseFloat(n.toPrecision(10)));
+}
+
+function setResult(txt) {
+  const el  = document.getElementById('resultEl');
+  const len = txt.length;
+  el.style.fontSize = len > 18 ? '24px' : len > 12 ? '34px' : len > 9 ? '42px' : '50px';
+  el.textContent    = txt;
+}
+
+function showResult(txt) {
+  document.getElementById('resultEl').textContent = txt;
+}
+
+function refresh() {
+  document.getElementById('exprEl').textContent = expr;
+  if (!expr) { setResult('0'); return; }
+  try {
+    const res = evalExpr(expr);
+    if (isFinite(res) && !isNaN(res)) setResult(fmtNum(res));
+  } catch { /* partial input */ }
+}
+
+// ── CURRENCY LOGIC ───────────────────────────────────────
+function currIns(ch) {
+  if (ch === '.' && currExpr.includes('.')) return;
+  if (ch === '.' && currExpr === '') currExpr = '0';
+  currExpr += ch;
+  refreshCurrency();
+}
+
+function refreshCurrency() {
+  const exprEl    = document.getElementById('exprEl');
+  const labelEl   = document.getElementById('currLabel');
+  const rate      = rates[selectedCurrency];
+
+  exprEl.textContent  = currExpr;
+  labelEl.textContent = selectedCurrency + ' → ₪' + (rate ? '  |  1 ' + selectedCurrency + ' = ₪' + fmtRate(rate) : '');
+
+  if (!currExpr || !rate) {
+    setResult(rate ? '₪ 0' : '...');
+    return;
+  }
+  const ils = parseFloat(currExpr) * rate;
+  setResult('₪ ' + fmtILS(ils));
+}
+
+function fmtRate(r) {
+  return r >= 1000 ? r.toFixed(0) : r >= 10 ? r.toFixed(2) : r.toFixed(4);
+}
+
+function fmtILS(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1000) return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return n.toFixed(2);
+}
+
+async function fetchRates() {
+  document.getElementById('rateLine').textContent = 'Fetching rates...';
+
+  // Try cache first
+  const cached = localStorage.getItem('ratesCache');
+  if (cached) {
+    const { date, data } = JSON.parse(cached);
+    const today = new Date().toISOString().slice(0, 10);
+    if (date === today) {
+      rates = data;
+      afterFetch();
+      return;
+    }
+  }
+
+  try {
+    const res  = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/ils.json');
+    const data = await res.json();
+    const ilsBase = data.ils;
+    const newRates = {};
+    ALL_CURRENCIES.forEach(({ code }) => {
+      const key = code.toLowerCase();
+      if (ilsBase[key] && ilsBase[key] > 0) newRates[code] = 1 / ilsBase[key];
+    });
+    rates = newRates;
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('ratesCache', JSON.stringify({ date: today, data: rates }));
+    afterFetch();
+  } catch {
+    document.getElementById('rateLine').textContent = 'Could not load rates — check connection';
+  }
+}
+
+function afterFetch() {
+  const now     = new Date();
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('rateLine').textContent = 'Market rates · Updated today ' + timeStr;
+  renderPills();
+  refreshCurrency();
+}
+
+// ── CURRENCY PILLS ───────────────────────────────────────
+function renderPills() {
+  const row = document.getElementById('pillsRow');
+  // Keep the + button, rebuild pills before it
+  row.innerHTML = '';
+  activeCurrencies.forEach(code => {
+    const pill = document.createElement('div');
+    pill.className = 'pill' + (code === selectedCurrency ? ' selected' : '');
+    pill.innerHTML = `<span onclick="selectCurrency('${code}')">${code}</span>
+                      <span class="pill-x" onclick="removeCurrency('${code}')">×</span>`;
+    row.appendChild(pill);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-pill';
+  addBtn.textContent = '+';
+  addBtn.onclick = openOverlay;
+  row.appendChild(addBtn);
+}
+
+function selectCurrency(code) {
+  selectedCurrency = code;
+  renderPills();
+  refreshCurrency();
+}
+
+function removeCurrency(code) {
+  if (activeCurrencies.length <= 1) return;
+  activeCurrencies = activeCurrencies.filter(c => c !== code);
+  if (selectedCurrency === code) selectedCurrency = activeCurrencies[0];
+  localStorage.setItem('activeCurrencies', JSON.stringify(activeCurrencies));
+  renderPills();
+  refreshCurrency();
+}
+
+function addCurrency(code) {
+  if (!activeCurrencies.includes(code)) {
+    activeCurrencies.push(code);
+    localStorage.setItem('activeCurrencies', JSON.stringify(activeCurrencies));
+    renderPills();
+  }
+  selectCurrency(code);
+}
+
+// ── OVERLAY ──────────────────────────────────────────────
+function openOverlay() {
+  document.getElementById('currSearch').value = '';
+  filterCurrencies('');
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('currSearch').focus(), 300);
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function handleOverlayBg(e) {
+  if (e.target === document.getElementById('overlay')) closeOverlay();
+}
+
+function filterCurrencies(query) {
+  const q   = query.toLowerCase().trim();
+  const list = document.getElementById('currList');
+  list.innerHTML = '';
+
+  ALL_CURRENCIES
+    .filter(c => !q ||
+      c.code.toLowerCase().includes(q) ||
+      c.name.toLowerCase().includes(q) ||
+      c.country.toLowerCase().includes(q))
+    .forEach(c => {
+      const isActive = activeCurrencies.includes(c.code);
+      const item = document.createElement('div');
+      item.className = 'curr-item';
+      item.innerHTML = `
+        <span class="curr-flag">${c.flag}</span>
+        <div class="curr-item-info">
+          <div class="curr-item-code">${c.code} <span style="font-weight:400;color:#555">${c.name}</span></div>
+          <div class="curr-item-country">${c.country}</div>
+        </div>
+        <span class="curr-item-check">${isActive ? '✓' : ''}</span>`;
+      item.onclick = () => { addCurrency(c.code); closeOverlay(); };
+      list.appendChild(item);
+    });
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (k >= '0' && k <= '9')        { ins(k); return; }
+  if (k === '+')                    { ins('+'); return; }
+  if (k === '-')                    { ins('−'); return; }
+  if (k === '*')                    { ins('×'); return; }
+  if (k === '/')                    { e.preventDefault(); ins('÷'); return; }
+  if (k === '.')                    { ins('.'); return; }
+  if (k === '(')                    { ins('('); return; }
+  if (k === ')')                    { ins(')'); return; }
+  if (k === '^')                    { ins('^'); return; }
+  if (k === 'Enter' || k === '=')   { doCalc(); return; }
+  if (k === 'Backspace')            { doDelete(); return; }
+  if (k === 'Escape')               { if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
+});
+
+// ── INIT ─────────────────────────────────────────────────
+if (!localStorage.getItem('activeCurrencies')) {
+  localStorage.setItem('activeCurrencies', JSON.stringify(activeCurrencies));
+}
+setMode('sci');
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js');
+}
+</script>
+</body>
+</html>
