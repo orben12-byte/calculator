@@ -43,7 +43,8 @@ body {
 
 .expr {
   font-size: clamp(15px, 4.5vw, 19px);
-  color: rgba(255,255,255,0.72);
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
   min-height: 18px;
   line-height: 1.5;
   word-break: break-all;
@@ -80,9 +81,9 @@ body {
 .tab {
   background: none;
   border: none;
-  font-size: clamp(15px, 4vw, 17px);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   color: #AAAAAA;
   cursor: pointer;
   padding-bottom: 10px;
@@ -308,13 +309,31 @@ body {
   }
   .calc {
     width: 100vw;
-    min-height: 100dvh;
+    height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+    display: flex;
+    flex-direction: column;
   }
   .display {
     border-radius: 0;
+    flex-shrink: 0;
   }
+  .tabs { flex-shrink: 0; }
+  .divider { flex-shrink: 0; }
+  .sci-wrap { flex-shrink: 0; padding: 6px 8px 2px; }
+  .curr-wrap { flex-shrink: 0; padding: 10px 8px 6px; }
+  .num-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 8px 16px;
+  }
+  .num-grid {
+    flex: 1;
+    grid-template-rows: repeat(4, 1fr);
+  }
+  .nb { height: auto; }
 }
 </style>
 </head>
@@ -331,8 +350,8 @@ body {
 
   <!-- Mode tabs -->
   <div class="tabs">
-    <button class="tab active-sci" id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
     <button class="tab"            id="tabNorm" onclick="setMode('norm')">NORMAL</button>
+    <button class="tab"            id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
     <button class="tab"            id="tabCurr" onclick="setMode('curr')">CURRENCY</button>
   </div>
   <div class="divider"></div>
@@ -464,6 +483,7 @@ const ALL_CURRENCIES = [
   { code:'MXN', name:'Mexican Peso',        country:'Mexico',            flag:'🇲🇽' },
   { code:'GEL', name:'Georgian Lari',       country:'Georgia',           flag:'🇬🇪' },
   { code:'UAH', name:'Ukrainian Hryvnia',   country:'Ukraine',           flag:'🇺🇦' },
+  { code:'RUB', name:'Russian Ruble',       country:'Russia',            flag:'🇷🇺' },
   { code:'CLP', name:'Chilean Peso',        country:'Chile',             flag:'🇨🇱' },
   { code:'MAD', name:'Moroccan Dirham',     country:'Morocco',           flag:'🇲🇦' },
   { code:'TND', name:'Tunisian Dinar',      country:'Tunisia',           flag:'🇹🇳' },
@@ -496,6 +516,7 @@ function setMode(m) {
     currWrap.className     = 'curr-wrap';
     sciWrap.className      = 'sci-wrap';
     dimCalcButtons(false);
+    refresh();
   }
 
   ['delBtn','acBtn','mulBtn','divBtn','addBtn','subBtn','ansBtn','signBtn'].forEach(id => {
@@ -844,7 +865,7 @@ document.addEventListener('keydown', e => {
 if (!localStorage.getItem('activeCurrencies')) {
   localStorage.setItem('activeCurrencies', JSON.stringify(activeCurrencies));
 }
-setMode('sci');
+setMode('norm');
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js');
