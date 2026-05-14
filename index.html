@@ -354,7 +354,108 @@ body {
     grid-template-rows: repeat(4, 1fr);
   }
   .nb { height: auto; }
+  .toast { bottom: 100px; }
 }
+
+/* ── HISTORY BUTTON ── */
+.hist-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  user-select: none;
+}
+.hist-btn:hover  { color: rgba(255,255,255,0.9); }
+.display.curr .hist-btn { opacity: 0; pointer-events: none; }
+
+/* ── DISPLAY TOP ROW ── */
+.display-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.display-top .expr { flex: 1; text-align: right; }
+
+/* ── RESULT — tap to copy ── */
+.result { cursor: pointer; }
+
+/* ── HISTORY SHEET ── */
+.hist-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 110;
+  pointer-events: none;
+  transition: background 0.25s;
+}
+.hist-overlay.open {
+  background: rgba(0,0,0,0.45);
+  pointer-events: all;
+}
+.hist-panel {
+  width: min(360px, 100vw);
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 8px 16px 24px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.hist-overlay.open .hist-panel { transform: translateY(0); }
+.hist-handle {
+  width: 36px; height: 4px;
+  background: #E0E0E0; border-radius: 2px;
+  margin: 6px auto 14px;
+}
+.hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hist-title  { font-size: 16px; font-weight: 600; color: #222; }
+.hist-clear  { background: none; border: none; font-size: 15px; color: #C75F56; cursor: pointer; padding: 4px 8px; }
+.hist-list   { overflow-y: auto; flex: 1; }
+.hist-item {
+  padding: 12px 6px;
+  border-bottom: 1px solid #F5F5F5;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+}
+.hist-item:hover  { background: #F8F8F8; }
+.hist-item:active { background: #F0F0F0; }
+.hist-item-expr   { font-size: 15px; color: #999; margin-bottom: 2px; }
+.hist-item-result { font-size: 22px; font-weight: 700; color: #222; }
+.hist-empty { text-align: center; color: #AAAAAA; font-size: 15px; padding: 40px 0; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 200;
+  white-space: nowrap;
+}
+.toast.visible { opacity: 1; }
 </style>
 </head>
 <body>
@@ -363,7 +464,10 @@ body {
 
   <!-- Display -->
   <div class="display sci" id="disp">
-    <div class="expr" id="exprEl"></div>
+    <div class="display-top">
+      <button class="hist-btn" id="histBtn" onclick="openHistory()">🕐</button>
+      <div class="expr" id="exprEl"></div>
+    </div>
     <div class="curr-ab" id="currAB">
       <div class="curr-row" onclick="openOverlay('from')">
         <span class="curr-row-flag" id="currFromFlag">🇺🇸</span>
@@ -381,7 +485,7 @@ body {
         <span class="curr-row-amt"  id="currToAmt">0</span>
       </div>
     </div>
-    <div class="result" id="resultEl">0</div>
+    <div class="result" id="resultEl" onclick="copyResult()">0</div>
   </div>
 
   <!-- Mode tabs -->
@@ -448,6 +552,21 @@ body {
   </div>
 
 </div>
+
+<!-- History sheet -->
+<div class="hist-overlay" id="histOverlay" onclick="handleHistOverlayBg(event)">
+  <div class="hist-panel">
+    <div class="hist-handle"></div>
+    <div class="hist-header">
+      <span class="hist-title">History</span>
+      <button class="hist-clear" onclick="clearHistory()">Clear</button>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Copied!</div>
 
 <!-- Currency overlay -->
 <div class="overlay" id="overlay" onclick="handleOverlayBg(event)">
@@ -663,6 +782,7 @@ function doCalc() {
   lastAns = res;
   document.getElementById('exprEl').textContent = expr;
   setResult(fmtNum(res));
+  addToHistory(expr, fmtNum(res));
   expr    = fmtNum(res);
   afterEq = true;
 }
@@ -866,6 +986,77 @@ function filterCurrencies(query) {
     });
 }
 
+// ── HISTORY ──────────────────────────────────────────────
+let calcHistory = JSON.parse(localStorage.getItem('calcHistory') || '[]');
+
+function addToHistory(exprStr, resultStr) {
+  calcHistory.unshift({ expr: exprStr, result: resultStr });
+  if (calcHistory.length > 10) calcHistory.pop();
+  localStorage.setItem('calcHistory', JSON.stringify(calcHistory));
+}
+
+function openHistory() {
+  renderHistory();
+  document.getElementById('histOverlay').classList.add('open');
+}
+
+function closeHistory() {
+  document.getElementById('histOverlay').classList.remove('open');
+}
+
+function handleHistOverlayBg(e) {
+  if (e.target === document.getElementById('histOverlay')) closeHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('histList');
+  list.innerHTML = '';
+  if (!calcHistory.length) {
+    list.innerHTML = '<p class="hist-empty">No calculations yet</p>';
+    return;
+  }
+  calcHistory.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'hist-item';
+    el.innerHTML = `
+      <div class="hist-item-expr">${item.expr}</div>
+      <div class="hist-item-result">${item.result}</div>`;
+    el.onclick = () => loadFromHistory(item);
+    list.appendChild(el);
+  });
+}
+
+function loadFromHistory(item) {
+  expr    = item.result;
+  lastAns = parseFloat(item.result.replace(/,/g, ''));
+  afterEq = true;
+  refresh();
+  closeHistory();
+}
+
+function clearHistory() {
+  calcHistory = [];
+  localStorage.removeItem('calcHistory');
+  renderHistory();
+}
+
+// ── COPY TO CLIPBOARD ────────────────────────────────────
+let toastTimer = null;
+
+function copyResult() {
+  const txt = document.getElementById('resultEl').textContent;
+  if (!txt || txt === '0' || txt === 'Error') return;
+  navigator.clipboard.writeText(txt).then(() => showToast('Copied!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2000);
+}
+
 // ── KEYBOARD ─────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -881,7 +1072,7 @@ document.addEventListener('keydown', e => {
   if (k === '^')                    { ins('^'); return; }
   if (k === 'Enter' || k === '=')   { doCalc(); return; }
   if (k === 'Backspace')            { doDelete(); return; }
-  if (k === 'Escape')               { if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
+  if (k === 'Escape')               { if (document.getElementById('histOverlay').classList.contains('open')) closeHistory(); else if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
 });
 
 // ── INIT ─────────────────────────────────────────────────
