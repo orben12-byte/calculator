@@ -346,7 +346,7 @@ body {
   .divider { flex-shrink: 0; }
   .sci-wrap { flex-shrink: 0; padding: 6px 8px 2px; }
   .curr-wrap { flex-shrink: 0; padding: 10px 8px 6px; }
-  .tip-wrap  { flex: 1; overflow-y: auto; padding: 12px 10px 16px; }
+  .tip-wrap  { flex-shrink: 0; padding: 10px 8px 6px; }
   .num-wrap {
     flex: 1;
     display: flex;
@@ -441,23 +441,24 @@ body {
 .hist-item-result { font-size: 22px; font-weight: 700; color: #222; }
 .hist-empty { text-align: center; color: #AAAAAA; font-size: 15px; padding: 40px 0; }
 
-/* ── TIP WRAP (inline mode) ── */
+/* ── TIP WRAP (slim controls strip) ── */
 .tip-wrap {
   display: none;
   flex-direction: column;
-  padding: 14px 16px 20px;
+  padding: 10px 16px 8px;
+  gap: 0;
 }
 .tip-wrap.visible { display: flex; }
 .tip-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-.tip-lbl { font-size: 15px; color: #555; }
+.tip-lbl { font-size: 15px; color: #555; flex-shrink: 0; margin-right: 10px; }
 .tip-inp {
-  width: 120px;
-  padding: 8px 12px;
+  width: 90px;
+  padding: 6px 10px;
   border: 1.5px solid #E8E8E8;
   border-radius: 10px;
   font-size: 15px;
@@ -470,7 +471,8 @@ body {
 /* ── TIP PRESETS ── */
 .tip-presets {
   display: flex;
-  gap: 6px;
+  gap: 5px;
+  flex-wrap: nowrap;
 }
 .tip-preset {
   background: #F5F5F7;
@@ -479,7 +481,7 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: #555;
-  padding: 6px 10px;
+  padding: 6px 9px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
@@ -491,20 +493,16 @@ body {
   display: none;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .tip-custom-row.open { display: flex; }
-
-.tip-divider { height: 1px; background: #F0F0F0; margin: 12px 0; }
-.tip-result-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+.tip-summary {
+  font-size: 15px;
+  color: #999;
+  text-align: center;
+  min-height: 18px;
+  padding-bottom: 2px;
 }
-.tip-result-lbl { font-size: 15px; color: #999; }
-.tip-result-val { font-size: 17px; font-weight: 700; color: #222; }
-.tip-result-val.big { font-size: 22px; color: #C75F56; }
 
 /* ── TOAST ── */
 .toast {
@@ -595,15 +593,11 @@ body {
     <div class="rate-line" id="rateLine">Loading rates...</div>
   </div>
 
-  <!-- Tips section -->
+  <!-- Tips section (slim controls strip — numpad handles bill input) -->
   <div class="tip-wrap" id="tipWrap">
     <div class="tip-row">
-      <span class="tip-lbl">Bill</span>
-      <input class="tip-inp" id="tipBill" type="number" inputmode="decimal" placeholder="0" oninput="calcTip()">
-    </div>
-    <div class="tip-row">
       <span class="tip-lbl">Tip</span>
-      <div class="tip-presets">
+      <div class="tip-presets" id="tipPctPresets">
         <button class="tip-preset"        onclick="setTipPct(10,this)">10%</button>
         <button class="tip-preset active" onclick="setTipPct(15,this)">15%</button>
         <button class="tip-preset"        onclick="setTipPct(18,this)">18%</button>
@@ -613,25 +607,24 @@ body {
     </div>
     <div class="tip-custom-row" id="tipCustomRow">
       <span class="tip-lbl">Custom %</span>
-      <input class="tip-inp" id="tipPct" type="number" inputmode="decimal" placeholder="%" oninput="calcTip()">
+      <input class="tip-inp" id="tipPct" type="number" inputmode="decimal" placeholder="%" oninput="refreshTip()">
     </div>
     <div class="tip-row">
-      <span class="tip-lbl">Split</span>
-      <input class="tip-inp" id="tipSplit" type="number" inputmode="numeric" placeholder="1" value="1" oninput="calcTip()">
+      <span class="tip-lbl">People</span>
+      <div class="tip-presets" id="tipPplPresets">
+        <button class="tip-preset"        onclick="setTipPeople(1,this)">1</button>
+        <button class="tip-preset active" onclick="setTipPeople(2,this)">2</button>
+        <button class="tip-preset"        onclick="setTipPeople(3,this)">3</button>
+        <button class="tip-preset"        onclick="setTipPeople(4,this)">4</button>
+        <button class="tip-preset"        onclick="setTipPeople(5,this)">5</button>
+        <button class="tip-preset"        id="prePeople" onclick="openCustomPeople(this)">···</button>
+      </div>
     </div>
-    <div class="tip-divider"></div>
-    <div class="tip-result-row">
-      <span class="tip-result-lbl">Tip amount</span>
-      <span class="tip-result-val" id="tipAmt">—</span>
+    <div class="tip-custom-row" id="tipCustomPplRow">
+      <span class="tip-lbl">Custom</span>
+      <input class="tip-inp" id="tipPplCustom" type="number" inputmode="numeric" min="1" placeholder="#" oninput="refreshTip()">
     </div>
-    <div class="tip-result-row">
-      <span class="tip-result-lbl">Total</span>
-      <span class="tip-result-val" id="tipTotal">—</span>
-    </div>
-    <div class="tip-result-row">
-      <span class="tip-result-lbl">Per person</span>
-      <span class="tip-result-val big" id="tipPer">—</span>
-    </div>
+    <div class="tip-summary" id="tipSummary"></div>
   </div>
 
   <!-- Numeric section -->
@@ -786,9 +779,12 @@ function setMode(m) {
     sciWrap.style.display = 'none';
     currWrap.className    = 'curr-wrap';
     tipWrap.className     = 'tip-wrap visible';
-    numWrap.style.display = 'none';
-    calcTip();
-    setTimeout(() => document.getElementById('tipBill').focus(), 300);
+    numWrap.style.display = '';
+    dimCalcButtons(false);
+    ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn'].forEach(id =>
+      document.getElementById(id).classList.add('dimmed')
+    );
+    refreshTip();
   } else {
     sciWrap.style.display  = isSci ? '' : 'none';
     currWrap.className     = 'curr-wrap';
@@ -821,6 +817,10 @@ function ins(ch) {
     if (/^[0-9]$/.test(ch) || ch === '.') currIns(ch);
     return;
   }
+  if (mode === 'tip') {
+    if (/^[0-9]$/.test(ch) || ch === '.') tipIns(ch);
+    return;
+  }
   if (afterEq) {
     afterEq = false;
     const isNewStart = /^[0-9.(]$/.test(ch) || /^[a-z]/.test(ch);
@@ -832,21 +832,21 @@ function ins(ch) {
 }
 
 function insPow(n) {
-  if (mode === 'curr') return;
+  if (mode === 'curr' || mode === 'tip') return;
   afterEq = false;
   expr += '^' + n;
   refresh();
 }
 
 function insTrig(fn) {
-  if (mode === 'curr') return;
+  if (mode === 'curr' || mode === 'tip') return;
   const name = (hypOn ? fn + 'h' : fn) + '(';
   if (hypOn) { hypOn = false; styleHyp(); }
   ins(name);
 }
 
 function toggleSign() {
-  if (mode === 'curr') return;
+  if (mode === 'curr' || mode === 'tip') return;
   if (afterEq && lastAns !== null) {
     const neg = -lastAns;
     lastAns = neg;
@@ -862,7 +862,7 @@ function toggleSign() {
 }
 
 function insAns() {
-  if (mode === 'curr') return;
+  if (mode === 'curr' || mode === 'tip') return;
   if (lastAns !== null) ins(fmtNum(lastAns));
 }
 
@@ -880,6 +880,7 @@ function styleHyp() {
 
 function doDelete() {
   if (mode === 'curr') { currExpr = currExpr.slice(0, -1); refreshCurrency(); return; }
+  if (mode === 'tip')  { tipBillStr = tipBillStr.slice(0, -1); refreshTip(); return; }
   afterEq = false;
   if (!expr) return;
   const fnMatch = expr.match(/(sin|cos|tan|sinh|cosh|tanh|abs|sqrt|log|ln)\($/);
@@ -891,6 +892,7 @@ function doDelete() {
 
 function doClear() {
   if (mode === 'curr') { currExpr = ''; refreshCurrency(); return; }
+  if (mode === 'tip')  { tipBillStr = ''; refreshTip(); return; }
   afterEq = false;
   expr    = '';
   refresh();
@@ -898,7 +900,7 @@ function doClear() {
 
 // ── CALC ENGINE ──────────────────────────────────────────
 function doCalc() {
-  if (mode === 'curr') return;
+  if (mode === 'curr' || mode === 'tip') return;
   if (!expr) return;
   let res;
   try   { res = evalExpr(expr); }
@@ -1140,48 +1142,75 @@ document.querySelector('.calc').addEventListener('touchend', e => {
 
 // ── TIP CALCULATOR ───────────────────────────────────────
 let tipPctValue = 15;
+let tipPeople   = 2;
+let tipBillStr  = '';
+
+function tipIns(ch) {
+  if (ch === '.' && tipBillStr.includes('.')) return;
+  if (ch === '.' && tipBillStr === '') tipBillStr = '0';
+  tipBillStr += ch;
+  refreshTip();
+}
 
 function setTipPct(pct, btn) {
   tipPctValue = pct;
-  document.querySelectorAll('.tip-preset').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tipPctPresets .tip-preset').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tipCustomRow').classList.remove('open');
-  calcTip();
+  refreshTip();
 }
 
 function openCustomPct(btn) {
-  document.querySelectorAll('.tip-preset').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tipPctPresets .tip-preset').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tipCustomRow').classList.add('open');
   setTimeout(() => document.getElementById('tipPct').focus(), 100);
 }
 
-function closeTip() {
-  setMode('norm');
+function setTipPeople(n, btn) {
+  tipPeople = n;
+  document.querySelectorAll('#tipPplPresets .tip-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tipCustomPplRow').classList.remove('open');
+  refreshTip();
 }
 
-function calcTip() {
-  const bill     = parseFloat(document.getElementById('tipBill').value) || 0;
-  const isCustom = document.getElementById('tipCustomRow').classList.contains('open');
-  const pct      = isCustom
+function openCustomPeople(btn) {
+  document.querySelectorAll('#tipPplPresets .tip-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tipCustomPplRow').classList.add('open');
+  setTimeout(() => document.getElementById('tipPplCustom').focus(), 100);
+}
+
+function refreshTip() {
+  const bill       = parseFloat(tipBillStr) || 0;
+  const isCustomPct = document.getElementById('tipCustomRow').classList.contains('open');
+  const pct        = isCustomPct
     ? (parseFloat(document.getElementById('tipPct').value) || 0)
     : tipPctValue;
-  const split    = Math.max(1, parseInt(document.getElementById('tipSplit').value) || 1);
+  const isCustomPpl = document.getElementById('tipCustomPplRow').classList.contains('open');
+  const people     = isCustomPpl
+    ? Math.max(1, parseInt(document.getElementById('tipPplCustom').value) || 1)
+    : tipPeople;
+
+  // Update display area
+  document.getElementById('exprEl').textContent =
+    bill ? `${tipBillStr} · ${pct}% · ${people} ${people === 1 ? 'person' : 'ppl'}` : '';
 
   if (!bill) {
-    ['tipAmt', 'tipTotal', 'tipPer'].forEach(id =>
-      document.getElementById(id).textContent = '—');
+    setResult('0');
+    document.getElementById('tipSummary').textContent = '';
     return;
   }
 
+  const fmt   = n => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const tip   = bill * pct / 100;
   const total = bill + tip;
-  const per   = total / split;
-  const fmt   = n => '₪' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const per   = total / people;
 
-  document.getElementById('tipAmt').textContent   = fmt(tip);
-  document.getElementById('tipTotal').textContent = fmt(total);
-  document.getElementById('tipPer').textContent   = fmt(per);
+  setResult('₪' + fmt(per));
+  document.getElementById('tipSummary').textContent =
+    `Tip ₪${fmt(tip)}  ·  Total ₪${fmt(total)}`;
 }
 
 // ── HISTORY ──────────────────────────────────────────────
