@@ -41,6 +41,7 @@ body {
 .display.norm { background: #C75F56; }
 .display.curr { background: #4A8E7C; }
 .display.tip  { background: #C49A3C; }
+.display.unit { background: #7B6FAE; }
 
 .expr {
   font-size: clamp(15px, 4.5vw, 19px);
@@ -89,6 +90,7 @@ body {
 .tab.active-norm { color: #C75F56; border-color: #C75F56; }
 .tab.active-curr { color: #4A8E7C; border-color: #4A8E7C; }
 .tab.active-tip  { color: #C49A3C; border-color: #C49A3C; }
+.tab.active-unit { color: #7B6FAE; border-color: #7B6FAE; }
 
 .divider { height: 1px; background: #EFEFEF; }
 
@@ -325,6 +327,118 @@ body {
 .curr-item-country { font-size: 13px; color: #999; }
 .curr-item-check { font-size: 16px; color: #4A8E7C; min-width: 20px; text-align: right; }
 
+/* ── UNIT DISPLAY (reuses curr-ab pattern) ── */
+.unit-ab {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  padding: 2px 0;
+}
+.display.unit .unit-ab { display: flex; }
+.display.unit .expr    { display: none; }
+.display.unit .result  { display: none; }
+.display.unit .hist-btn { opacity: 0; pointer-events: none; }
+
+.unit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+.unit-row:active { background: rgba(255,255,255,0.12); }
+.unit-row-icon { font-size: 18px; flex-shrink: 0; }
+.unit-row-code {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.unit-row-chev {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  flex-shrink: 0;
+}
+.unit-row-amt {
+  margin-left: auto;
+  font-size: clamp(22px, 6vw, 28px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+.unit-swap-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.unit-swap-line::before,
+.unit-swap-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.22);
+}
+
+/* ── UNIT WRAP (category strip) ── */
+.unit-wrap {
+  display: none;
+  padding: 8px 14px 4px;
+}
+.unit-wrap.visible { display: block; }
+.unit-cats {
+  display: flex;
+  gap: 6px;
+}
+.unit-cat {
+  flex: 1;
+  background: #F5F5F7;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: background 0.12s;
+  user-select: none;
+}
+.unit-cat:active { background: #DEDEE0; }
+.unit-cat.active { background: #7B6FAE; }
+
+/* ── UNIT LIST (overlay) ── */
+.unit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid #F5F5F5;
+  user-select: none;
+}
+.unit-item:hover  { background: #F8F8F8; }
+.unit-item:active { background: #F0F0F0; }
+.unit-item-code  { font-weight: 700; font-size: 16px; color: #222; min-width: 52px; }
+.unit-item-name  { font-size: 15px; color: #555; flex: 1; }
+.unit-item-check { font-size: 16px; color: #7B6FAE; min-width: 20px; text-align: right; }
+
+/* ── CURRENCY RATE HINT ── */
+.curr-rate-hint {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
 @media (max-width: 480px) {
   body {
     align-items: flex-start;
@@ -345,8 +459,9 @@ body {
   .tabs { flex-shrink: 0; }
   .divider { flex-shrink: 0; }
   .sci-wrap { flex-shrink: 0; padding: 6px 8px 2px; }
-  .curr-wrap { flex-shrink: 0; padding: 10px 8px 6px; }
-  .tip-wrap  { flex-shrink: 0; padding: 10px 8px 6px; }
+  .curr-wrap  { flex-shrink: 0; padding: 10px 8px 6px; }
+  .tip-wrap   { flex-shrink: 0; padding: 10px 8px 6px; }
+  .unit-wrap  { flex-shrink: 0; padding: 8px 8px 4px; }
   .num-wrap {
     flex: 1;
     display: flex;
@@ -535,6 +650,23 @@ body {
       <button class="hist-btn" id="histBtn" onclick="openHistory()">🕐</button>
       <div class="expr" id="exprEl"></div>
     </div>
+    <div class="unit-ab" id="unitAB">
+      <div class="unit-row" onclick="openUnitOverlay('from')">
+        <span class="unit-row-icon" id="unitFromIcon">📏</span>
+        <span class="unit-row-code" id="unitFromCode">km</span>
+        <span class="unit-row-chev">▾</span>
+        <span class="unit-row-amt"  id="unitFromAmt">0</span>
+      </div>
+      <div class="unit-swap-line">
+        <button class="curr-swap-btn" onclick="swapUnits()">↑↓</button>
+      </div>
+      <div class="unit-row" onclick="openUnitOverlay('to')">
+        <span class="unit-row-icon" id="unitToIcon">📏</span>
+        <span class="unit-row-code" id="unitToCode">m</span>
+        <span class="unit-row-chev">▾</span>
+        <span class="unit-row-amt"  id="unitToAmt">0</span>
+      </div>
+    </div>
     <div class="curr-ab" id="currAB">
       <div class="curr-row" onclick="openOverlay('from')">
         <span class="curr-row-flag" id="currFromFlag">🇺🇸</span>
@@ -544,6 +676,7 @@ body {
       </div>
       <div class="curr-swap-line">
         <button class="curr-swap-btn" onclick="swapCurrencies()">↑↓</button>
+        <span class="curr-rate-hint" id="currRateHint"></span>
       </div>
       <div class="curr-row" onclick="openOverlay('to')">
         <span class="curr-row-flag" id="currToFlag">🇮🇱</span>
@@ -561,6 +694,7 @@ body {
     <button class="tab" id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
     <button class="tab" id="tabCurr" onclick="setMode('curr')">CURRENCY</button>
     <button class="tab" id="tabTip"  onclick="setMode('tip')">TIPS</button>
+    <button class="tab" id="tabUnit" onclick="setMode('unit')">UNIT</button>
   </div>
   <div class="divider"></div>
 
@@ -569,8 +703,8 @@ body {
     <div class="sci-grid">
       <button class="sb"       onclick="ins('abs(')">Abs</button>
       <button class="sb"       onclick="insPow(3)">x³</button>
-      <button class="sb arrow">‹</button>
-      <button class="sb arrow">›</button>
+      <button class="sb"       onclick="ins('(')">&thinsp;(&thinsp;</button>
+      <button class="sb"       onclick="ins(')')">&thinsp;)&thinsp;</button>
       <button class="sb"       onclick="insPow(2)">x²</button>
       <button class="sb"       onclick="ins('^')">x<sup style="font-size:8px;margin-left:1px">□</sup></button>
       <button class="sb"       onclick="ins('mod ')">mod</button>
@@ -591,6 +725,17 @@ body {
   <!-- Currency section -->
   <div class="curr-wrap" id="currWrap">
     <div class="rate-line" id="rateLine">Loading rates...</div>
+  </div>
+
+  <!-- Unit section (category strip) -->
+  <div class="unit-wrap" id="unitWrap">
+    <div class="unit-cats">
+      <button class="unit-cat active" onclick="setUnitCategory('length',this)"      title="Length">📏</button>
+      <button class="unit-cat"        onclick="setUnitCategory('weight',this)"      title="Weight">⚖️</button>
+      <button class="unit-cat"        onclick="setUnitCategory('temperature',this)" title="Temperature">🌡️</button>
+      <button class="unit-cat"        onclick="setUnitCategory('volume',this)"      title="Volume">🥛</button>
+      <button class="unit-cat"        onclick="setUnitCategory('speed',this)"       title="Speed">🏎️</button>
+    </div>
   </div>
 
   <!-- Tips section (slim controls strip — numpad handles bill input) -->
@@ -670,6 +815,14 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast">Copied!</div>
 
+<!-- Unit overlay -->
+<div class="overlay" id="unitOverlay" onclick="handleUnitOverlayBg(event)">
+  <div class="overlay-panel">
+    <div class="overlay-handle"></div>
+    <div class="curr-list" id="unitList"></div>
+  </div>
+</div>
+
 <!-- Currency overlay -->
 <div class="overlay" id="overlay" onclick="handleOverlayBg(event)">
   <div class="overlay-panel">
@@ -689,6 +842,60 @@ const SCI_COLOR  = '#4A6E9A';
 const NORM_COLOR = '#C75F56';
 const CURR_COLOR = '#4A8E7C';
 const TIP_COLOR  = '#C49A3C';
+const UNIT_COLOR = '#7B6FAE';
+
+// ── UNIT DATA ────────────────────────────────────────────
+const UNIT_CATS = [
+  { id: 'length',      icon: '📏' },
+  { id: 'weight',      icon: '⚖️' },
+  { id: 'temperature', icon: '🌡️' },
+  { id: 'volume',      icon: '🥛' },
+  { id: 'speed',       icon: '🏎️' },
+];
+const UNIT_DATA = {
+  length:      [
+    { code:'km',  name:'Kilometer',   f:1000     },
+    { code:'m',   name:'Meter',       f:1        },
+    { code:'cm',  name:'Centimeter',  f:0.01     },
+    { code:'mm',  name:'Millimeter',  f:0.001    },
+    { code:'mi',  name:'Mile',        f:1609.344 },
+    { code:'ft',  name:'Foot',        f:0.3048   },
+    { code:'in',  name:'Inch',        f:0.0254   },
+    { code:'yd',  name:'Yard',        f:0.9144   },
+  ],
+  weight:      [
+    { code:'kg',  name:'Kilogram',    f:1        },
+    { code:'g',   name:'Gram',        f:0.001    },
+    { code:'lb',  name:'Pound',       f:0.453592 },
+    { code:'oz',  name:'Ounce',       f:0.028350 },
+    { code:'t',   name:'Tonne',       f:1000     },
+  ],
+  temperature: [
+    { code:'°C',  name:'Celsius'     },
+    { code:'°F',  name:'Fahrenheit'  },
+    { code:'K',   name:'Kelvin'      },
+  ],
+  volume:      [
+    { code:'L',    name:'Liter',       f:1        },
+    { code:'mL',   name:'Milliliter',  f:0.001    },
+    { code:'gal',  name:'Gallon (US)', f:3.78541  },
+    { code:'fl oz',name:'Fl. Ounce',   f:0.029574 },
+    { code:'cup',  name:'Cup (US)',     f:0.236588 },
+  ],
+  speed:       [
+    { code:'km/h', name:'Km/h',        f:1        },
+    { code:'mph',  name:'MPH',         f:1.60934  },
+    { code:'m/s',  name:'m/s',         f:3.6      },
+    { code:'knot', name:'Knot',        f:1.852    },
+  ],
+};
+const UNIT_DEFAULTS = {
+  length:      { from:'km',   to:'m'   },
+  weight:      { from:'kg',   to:'lb'  },
+  temperature: { from:'°C',   to:'°F'  },
+  volume:      { from:'L',    to:'gal' },
+  speed:       { from:'km/h', to:'mph' },
+};
 
 // ── CALC STATE ───────────────────────────────────────────
 let expr    = '';
@@ -696,6 +903,13 @@ let lastAns = null;
 let hypOn   = false;
 let mode    = 'sci';
 let afterEq = false;
+
+// ── UNIT STATE ───────────────────────────────────────────
+let unitCategory = 'length';
+let unitFrom     = 'km';
+let unitTo       = 'm';
+let unitExpr     = '';
+let unitTarget   = 'from';
 
 // ── CURRENCY STATE ───────────────────────────────────────
 let currFrom = localStorage.getItem('currFrom') || 'USD';
@@ -755,23 +969,27 @@ function setMode(m) {
   const isSci  = m === 'sci';
   const isCurr = m === 'curr';
   const isTip  = m === 'tip';
-  const color  = isSci ? SCI_COLOR : isCurr ? CURR_COLOR : isTip ? TIP_COLOR : NORM_COLOR;
+  const isUnit = m === 'unit';
+  const color  = isSci ? SCI_COLOR : isCurr ? CURR_COLOR : isTip ? TIP_COLOR : isUnit ? UNIT_COLOR : NORM_COLOR;
 
   document.getElementById('disp').className    = 'display ' + m;
   document.getElementById('tabSci').className  = 'tab' + (m === 'sci'  ? ' active-sci'  : '');
   document.getElementById('tabNorm').className = 'tab' + (m === 'norm' ? ' active-norm' : '');
   document.getElementById('tabCurr').className = 'tab' + (m === 'curr' ? ' active-curr' : '');
   document.getElementById('tabTip').className  = 'tab' + (m === 'tip'  ? ' active-tip'  : '');
+  document.getElementById('tabUnit').className = 'tab' + (m === 'unit' ? ' active-unit' : '');
 
   const sciWrap  = document.getElementById('sciWrap');
   const currWrap = document.getElementById('currWrap');
   const tipWrap  = document.getElementById('tipWrap');
+  const unitWrap = document.getElementById('unitWrap');
   const numWrap  = document.getElementById('numWrap');
 
   if (isCurr) {
     sciWrap.style.display  = 'none';
     currWrap.className     = 'curr-wrap visible';
     tipWrap.className      = 'tip-wrap';
+    unitWrap.className     = 'unit-wrap';
     numWrap.style.display  = '';
     dimCalcButtons(true);
     if (!Object.keys(rates).length) fetchRates(); else { rates['ILS'] = 1; refreshCurrencyDisplay(); refreshCurrency(); }
@@ -779,16 +997,28 @@ function setMode(m) {
     sciWrap.style.display = 'none';
     currWrap.className    = 'curr-wrap';
     tipWrap.className     = 'tip-wrap visible';
+    unitWrap.className    = 'unit-wrap';
     numWrap.style.display = '';
     dimCalcButtons(false);
     ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn','eqBtn'].forEach(id =>
       document.getElementById(id).classList.add('dimmed')
     );
     refreshTip();
+  } else if (isUnit) {
+    sciWrap.style.display  = 'none';
+    currWrap.className     = 'curr-wrap';
+    tipWrap.className      = 'tip-wrap';
+    unitWrap.className     = 'unit-wrap visible';
+    numWrap.style.display  = '';
+    dimCalcButtons(true);
+    document.getElementById('signBtn').classList.remove('dimmed');
+    refreshUnitDisplay();
+    refreshUnit();
   } else {
     sciWrap.style.display  = isSci ? '' : 'none';
     currWrap.className     = 'curr-wrap';
     tipWrap.className      = 'tip-wrap';
+    unitWrap.className     = 'unit-wrap';
     sciWrap.className      = 'sci-wrap';
     numWrap.style.display  = '';
     dimCalcButtons(false);
@@ -821,6 +1051,10 @@ function ins(ch) {
     if (/^[0-9]$/.test(ch) || ch === '.') tipIns(ch);
     return;
   }
+  if (mode === 'unit') {
+    if (/^[0-9]$/.test(ch) || ch === '.') unitIns(ch);
+    return;
+  }
   if (afterEq) {
     afterEq = false;
     const isNewStart = /^[0-9.(]$/.test(ch) || /^[a-z]/.test(ch);
@@ -832,14 +1066,14 @@ function ins(ch) {
 }
 
 function insPow(n) {
-  if (mode === 'curr' || mode === 'tip') return;
+  if (mode === 'curr' || mode === 'tip' || mode === 'unit') return;
   afterEq = false;
   expr += '^' + n;
   refresh();
 }
 
 function insTrig(fn) {
-  if (mode === 'curr' || mode === 'tip') return;
+  if (mode === 'curr' || mode === 'tip' || mode === 'unit') return;
   const name = (hypOn ? fn + 'h' : fn) + '(';
   if (hypOn) { hypOn = false; styleHyp(); }
   ins(name);
@@ -847,6 +1081,12 @@ function insTrig(fn) {
 
 function toggleSign() {
   if (mode === 'curr' || mode === 'tip') return;
+  if (mode === 'unit') {
+    if (unitExpr.startsWith('-')) unitExpr = unitExpr.slice(1);
+    else if (unitExpr) unitExpr = '-' + unitExpr;
+    refreshUnit();
+    return;
+  }
   if (afterEq && lastAns !== null) {
     const neg = -lastAns;
     lastAns = neg;
@@ -862,7 +1102,7 @@ function toggleSign() {
 }
 
 function insAns() {
-  if (mode === 'curr' || mode === 'tip') return;
+  if (mode === 'curr' || mode === 'tip' || mode === 'unit') return;
   if (lastAns !== null) ins(fmtNum(lastAns));
 }
 
@@ -881,6 +1121,7 @@ function styleHyp() {
 function doDelete() {
   if (mode === 'curr') { currExpr = currExpr.slice(0, -1); refreshCurrency(); return; }
   if (mode === 'tip')  { tipBillStr = tipBillStr.slice(0, -1); refreshTip(); return; }
+  if (mode === 'unit') { unitExpr = unitExpr.slice(0, -1); refreshUnit(); return; }
   afterEq = false;
   if (!expr) return;
   const fnMatch = expr.match(/(sin|cos|tan|sinh|cosh|tanh|abs|sqrt|log|ln)\($/);
@@ -893,6 +1134,7 @@ function doDelete() {
 function doClear() {
   if (mode === 'curr') { currExpr = ''; refreshCurrency(); return; }
   if (mode === 'tip')  { tipBillStr = ''; refreshTip(); return; }
+  if (mode === 'unit') { unitExpr = ''; refreshUnit(); return; }
   afterEq = false;
   expr    = '';
   refresh();
@@ -900,7 +1142,7 @@ function doClear() {
 
 // ── CALC ENGINE ──────────────────────────────────────────
 function doCalc() {
-  if (mode === 'curr' || mode === 'tip') return;
+  if (mode === 'curr' || mode === 'tip' || mode === 'unit') return;
   if (!expr) return;
   let res;
   try   { res = evalExpr(expr); }
@@ -992,10 +1234,14 @@ function refreshCurrency() {
 
   if (!fromRate || !toRate) {
     document.getElementById('currToAmt').textContent = '...';
+    document.getElementById('currRateHint').textContent = '';
     return;
   }
   const result = amount * fromRate / toRate;
   document.getElementById('currToAmt').textContent = fmtAmt(result);
+  const rate1 = fromRate / toRate;
+  document.getElementById('currRateHint').textContent =
+    `1 ${currFrom} = ${fmtAmt(rate1)} ${currTo}`;
 }
 
 function swapCurrencies() {
@@ -1134,7 +1380,7 @@ document.querySelector('.calc').addEventListener('touchend', e => {
   // Horizontal must dominate and exceed threshold
   if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
 
-  const modes = ['norm', 'sci', 'curr', 'tip'];
+  const modes = ['norm', 'sci', 'curr', 'tip', 'unit'];
   const idx   = modes.indexOf(mode);
   if (dx < 0 && idx < modes.length - 1) setMode(modes[idx + 1]);
   else if (dx > 0 && idx > 0)           setMode(modes[idx - 1]);
@@ -1194,8 +1440,9 @@ function refreshTip() {
     : tipPeople;
 
   // Update display area
+  const perLabel = people === 1 ? 'total' : 'per person';
   document.getElementById('exprEl').textContent =
-    bill ? `${tipBillStr} · ${pct}% · ${people} ${people === 1 ? 'person' : 'ppl'}` : 'Enter bill amount';
+    bill ? `${tipBillStr} · ${pct}% → ${perLabel}` : 'Enter bill amount';
 
   if (!bill) {
     setResult('0');
@@ -1211,6 +1458,123 @@ function refreshTip() {
   setResult(fmt(per));
   document.getElementById('tipSummary').textContent =
     `Tip ${fmt(tip)}  ·  Total ${fmt(total)}`;
+}
+
+// ── UNIT CONVERTER ───────────────────────────────────────
+function unitIns(ch) {
+  if (ch === '.' && unitExpr.includes('.')) return;
+  if (ch === '.' && unitExpr === '') unitExpr = '0';
+  unitExpr += ch;
+  refreshUnit();
+}
+
+function setUnitCategory(cat, btn) {
+  unitCategory = cat;
+  document.querySelectorAll('.unit-cat').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  unitFrom = UNIT_DEFAULTS[cat].from;
+  unitTo   = UNIT_DEFAULTS[cat].to;
+  unitExpr = '';
+  refreshUnitDisplay();
+  refreshUnit();
+}
+
+function refreshUnitDisplay() {
+  const cat = UNIT_CATS.find(c => c.id === unitCategory);
+  const icon = cat ? cat.icon : '';
+  document.getElementById('unitFromIcon').textContent = icon;
+  document.getElementById('unitToIcon').textContent   = icon;
+  document.getElementById('unitFromCode').textContent = unitFrom;
+  document.getElementById('unitToCode').textContent   = unitTo;
+}
+
+function refreshUnit() {
+  document.getElementById('unitFromAmt').textContent = unitExpr || '0';
+  if (!unitExpr || unitExpr === '-') {
+    document.getElementById('unitToAmt').textContent = '0';
+    return;
+  }
+  const val = parseFloat(unitExpr);
+  let result;
+  if (unitCategory === 'temperature') {
+    result = convertTemp(val, unitFrom, unitTo);
+  } else {
+    const units = UNIT_DATA[unitCategory];
+    const fromU = units.find(u => u.code === unitFrom);
+    const toU   = units.find(u => u.code === unitTo);
+    if (!fromU || !toU) return;
+    result = val * fromU.f / toU.f;
+  }
+  document.getElementById('unitToAmt').textContent = fmtUnitResult(result);
+}
+
+function convertTemp(val, from, to) {
+  let c;
+  if (from === '°C')      c = val;
+  else if (from === '°F') c = (val - 32) * 5 / 9;
+  else                    c = val - 273.15;
+  if (to === '°C')      return c;
+  if (to === '°F')      return c * 9 / 5 + 32;
+  return c + 273.15;
+}
+
+function fmtUnitResult(n) {
+  if (!isFinite(n) || isNaN(n)) return '—';
+  if (Math.abs(n) >= 1e9)     return (n / 1e9).toPrecision(4) + 'B';
+  if (Math.abs(n) >= 1e6)     return (n / 1e6).toPrecision(4) + 'M';
+  if (Math.abs(n) < 0.0001 && n !== 0) return n.toExponential(3);
+  if (Number.isInteger(n) && Math.abs(n) < 1e9) return String(n);
+  return parseFloat(n.toPrecision(7)).toString();
+}
+
+function swapUnits() {
+  [unitFrom, unitTo] = [unitTo, unitFrom];
+  // Mirror: new FROM = old TO result, if unitExpr was set
+  const oldTo = document.getElementById('unitToAmt').textContent;
+  if (unitExpr && oldTo !== '0' && oldTo !== '—') {
+    unitExpr = oldTo;
+  }
+  refreshUnitDisplay();
+  refreshUnit();
+}
+
+function openUnitOverlay(target) {
+  unitTarget = target;
+  renderUnitList();
+  document.getElementById('unitOverlay').classList.add('open');
+}
+
+function renderUnitList() {
+  const units = UNIT_DATA[unitCategory];
+  const list  = document.getElementById('unitList');
+  list.innerHTML = '';
+  units.forEach(u => {
+    const isSelected = (unitTarget === 'from' ? unitFrom : unitTo) === u.code;
+    const item = document.createElement('div');
+    item.className = 'unit-item';
+    item.innerHTML = `
+      <span class="unit-item-code">${u.code}</span>
+      <span class="unit-item-name">${u.name}</span>
+      <span class="unit-item-check">${isSelected ? '✓' : ''}</span>`;
+    item.onclick = () => selectUnit(u.code);
+    list.appendChild(item);
+  });
+}
+
+function selectUnit(code) {
+  if (unitTarget === 'from') unitFrom = code;
+  else unitTo = code;
+  closeUnitOverlay();
+  refreshUnitDisplay();
+  refreshUnit();
+}
+
+function closeUnitOverlay() {
+  document.getElementById('unitOverlay').classList.remove('open');
+}
+
+function handleUnitOverlayBg(e) {
+  if (e.target === document.getElementById('unitOverlay')) closeUnitOverlay();
 }
 
 // ── HISTORY ──────────────────────────────────────────────
