@@ -40,6 +40,7 @@ body {
 .display.sci  { background: #4A6E9A; }
 .display.norm { background: #C75F56; }
 .display.curr { background: #4A8E7C; }
+.display.tip  { background: #C49A3C; }
 
 .expr {
   font-size: clamp(15px, 4.5vw, 19px);
@@ -68,8 +69,8 @@ body {
 /* ── TABS ── */
 .tabs {
   display: flex;
-  padding: 12px 14px 0;
-  gap: 12px;
+  padding: 12px 10px 0;
+  gap: 8px;
 }
 .tab {
   background: none;
@@ -82,10 +83,12 @@ body {
   padding-bottom: 10px;
   border-bottom: 2px solid transparent;
   transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
 }
 .tab.active-sci  { color: #4A6E9A; border-color: #4A6E9A; }
 .tab.active-norm { color: #C75F56; border-color: #C75F56; }
 .tab.active-curr { color: #4A8E7C; border-color: #4A8E7C; }
+.tab.active-tip  { color: #C49A3C; border-color: #C49A3C; }
 
 .divider { height: 1px; background: #EFEFEF; }
 
@@ -547,7 +550,6 @@ body {
     <div class="display-top">
       <button class="hist-btn" id="histBtn" onclick="openHistory()">🕐</button>
       <div class="expr" id="exprEl"></div>
-      <button class="tip-btn" id="tipBtn" onclick="openTip()">%</button>
     </div>
     <div class="curr-ab" id="currAB">
       <div class="curr-row" onclick="openOverlay('from')">
@@ -571,9 +573,10 @@ body {
 
   <!-- Mode tabs -->
   <div class="tabs">
-    <button class="tab"            id="tabNorm" onclick="setMode('norm')">NORMAL</button>
-    <button class="tab"            id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
-    <button class="tab"            id="tabCurr" onclick="setMode('curr')">CURRENCY</button>
+    <button class="tab" id="tabNorm" onclick="setMode('norm')">NORMAL</button>
+    <button class="tab" id="tabSci"  onclick="setMode('sci')">SCIENTIFIC</button>
+    <button class="tab" id="tabCurr" onclick="setMode('curr')">CURRENCY</button>
+    <button class="tab" id="tabTip"  onclick="setMode('tip')">TIPS</button>
   </div>
   <div class="divider"></div>
 
@@ -700,6 +703,7 @@ body {
 const SCI_COLOR  = '#4A6E9A';
 const NORM_COLOR = '#C75F56';
 const CURR_COLOR = '#4A8E7C';
+const TIP_COLOR  = '#C49A3C';
 
 // ── CALC STATE ───────────────────────────────────────────
 let expr    = '';
@@ -762,15 +766,20 @@ const ALL_CURRENCIES = [
 
 // ── MODE ─────────────────────────────────────────────────
 function setMode(m) {
+  // Close tip sheet silently when switching away
+  if (m !== 'tip') document.getElementById('tipOverlay').classList.remove('open');
+
   mode = m;
   const isSci  = m === 'sci';
   const isCurr = m === 'curr';
-  const color  = isSci ? SCI_COLOR : isCurr ? CURR_COLOR : NORM_COLOR;
+  const isTip  = m === 'tip';
+  const color  = isSci ? SCI_COLOR : isCurr ? CURR_COLOR : isTip ? TIP_COLOR : NORM_COLOR;
 
   document.getElementById('disp').className    = 'display ' + m;
   document.getElementById('tabSci').className  = 'tab' + (m === 'sci'  ? ' active-sci'  : '');
   document.getElementById('tabNorm').className = 'tab' + (m === 'norm' ? ' active-norm' : '');
   document.getElementById('tabCurr').className = 'tab' + (m === 'curr' ? ' active-curr' : '');
+  document.getElementById('tabTip').className  = 'tab' + (m === 'tip'  ? ' active-tip'  : '');
 
   const sciWrap  = document.getElementById('sciWrap');
   const currWrap = document.getElementById('currWrap');
@@ -779,6 +788,12 @@ function setMode(m) {
     currWrap.className     = 'curr-wrap visible';
     dimCalcButtons(true);
     if (!Object.keys(rates).length) fetchRates(); else { rates['ILS'] = 1; refreshCurrencyDisplay(); refreshCurrency(); }
+  } else if (isTip) {
+    sciWrap.style.display = 'none';
+    currWrap.className    = 'curr-wrap';
+    dimCalcButtons(true);
+    document.getElementById('tipOverlay').classList.add('open');
+    calcTip();
   } else {
     sciWrap.style.display  = isSci ? '' : 'none';
     currWrap.className     = 'curr-wrap';
@@ -1121,7 +1136,7 @@ document.querySelector('.calc').addEventListener('touchend', e => {
   // Horizontal must dominate and exceed threshold
   if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
 
-  const modes = ['norm', 'sci', 'curr'];
+  const modes = ['norm', 'sci', 'curr', 'tip'];
   const idx   = modes.indexOf(mode);
   if (dx < 0 && idx < modes.length - 1) setMode(modes[idx + 1]);
   else if (dx > 0 && idx > 0)           setMode(modes[idx - 1]);
@@ -1129,13 +1144,12 @@ document.querySelector('.calc').addEventListener('touchend', e => {
 
 // ── TIP CALCULATOR ───────────────────────────────────────
 function openTip() {
-  document.getElementById('tipOverlay').classList.add('open');
-  calcTip();
+  setMode('tip');
   setTimeout(() => document.getElementById('tipBill').focus(), 300);
 }
 
 function closeTip() {
-  document.getElementById('tipOverlay').classList.remove('open');
+  setMode('norm');
 }
 
 function handleTipOverlayBg(e) {
