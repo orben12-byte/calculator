@@ -466,6 +466,35 @@ body {
   color: #222;
 }
 .tip-inp:focus { border-color: #C49A3C; }
+
+/* ── TIP PRESETS ── */
+.tip-presets {
+  display: flex;
+  gap: 6px;
+}
+.tip-preset {
+  background: #F5F5F7;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  user-select: none;
+}
+.tip-preset:active { background: #DEDEE0; }
+.tip-preset.active { background: #C49A3C; color: #fff; }
+.tip-custom-row {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.tip-custom-row.open { display: flex; }
+
 .tip-divider { height: 1px; background: #F0F0F0; margin: 12px 0; }
 .tip-result-row {
   display: flex;
@@ -569,15 +598,25 @@ body {
   <!-- Tips section -->
   <div class="tip-wrap" id="tipWrap">
     <div class="tip-row">
-      <span class="tip-lbl">Bill total</span>
+      <span class="tip-lbl">Bill</span>
       <input class="tip-inp" id="tipBill" type="number" inputmode="decimal" placeholder="0" oninput="calcTip()">
     </div>
     <div class="tip-row">
-      <span class="tip-lbl">Tip %</span>
-      <input class="tip-inp" id="tipPct" type="number" inputmode="decimal" placeholder="15" value="15" oninput="calcTip()">
+      <span class="tip-lbl">Tip</span>
+      <div class="tip-presets">
+        <button class="tip-preset"        onclick="setTipPct(10,this)">10%</button>
+        <button class="tip-preset active" onclick="setTipPct(15,this)">15%</button>
+        <button class="tip-preset"        onclick="setTipPct(18,this)">18%</button>
+        <button class="tip-preset"        onclick="setTipPct(20,this)">20%</button>
+        <button class="tip-preset"        id="preOther" onclick="openCustomPct(this)">···</button>
+      </div>
+    </div>
+    <div class="tip-custom-row" id="tipCustomRow">
+      <span class="tip-lbl">Custom %</span>
+      <input class="tip-inp" id="tipPct" type="number" inputmode="decimal" placeholder="%" oninput="calcTip()">
     </div>
     <div class="tip-row">
-      <span class="tip-lbl">Split between</span>
+      <span class="tip-lbl">Split</span>
       <input class="tip-inp" id="tipSplit" type="number" inputmode="numeric" placeholder="1" value="1" oninput="calcTip()">
     </div>
     <div class="tip-divider"></div>
@@ -1100,14 +1139,34 @@ document.querySelector('.calc').addEventListener('touchend', e => {
 }, { passive: true });
 
 // ── TIP CALCULATOR ───────────────────────────────────────
+let tipPctValue = 15;
+
+function setTipPct(pct, btn) {
+  tipPctValue = pct;
+  document.querySelectorAll('.tip-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tipCustomRow').classList.remove('open');
+  calcTip();
+}
+
+function openCustomPct(btn) {
+  document.querySelectorAll('.tip-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tipCustomRow').classList.add('open');
+  setTimeout(() => document.getElementById('tipPct').focus(), 100);
+}
+
 function closeTip() {
   setMode('norm');
 }
 
 function calcTip() {
-  const bill  = parseFloat(document.getElementById('tipBill').value)  || 0;
-  const pct   = parseFloat(document.getElementById('tipPct').value)   || 0;
-  const split = Math.max(1, parseInt(document.getElementById('tipSplit').value) || 1);
+  const bill     = parseFloat(document.getElementById('tipBill').value) || 0;
+  const isCustom = document.getElementById('tipCustomRow').classList.contains('open');
+  const pct      = isCustom
+    ? (parseFloat(document.getElementById('tipPct').value) || 0)
+    : tipPctValue;
+  const split    = Math.max(1, parseInt(document.getElementById('tipSplit').value) || 1);
 
   if (!bill) {
     ['tipAmt', 'tipTotal', 'tipPer'].forEach(id =>
@@ -1121,8 +1180,8 @@ function calcTip() {
   const fmt   = n => '₪' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   document.getElementById('tipAmt').textContent   = fmt(tip);
-  document.getElementById('tipTotal').textContent  = fmt(total);
-  document.getElementById('tipPer').textContent    = fmt(per);
+  document.getElementById('tipTotal').textContent = fmt(total);
+  document.getElementById('tipPer').textContent   = fmt(per);
 }
 
 // ── HISTORY ──────────────────────────────────────────────
