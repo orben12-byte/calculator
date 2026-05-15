@@ -498,7 +498,7 @@ body {
 .tip-custom-row.open { display: flex; }
 .tip-summary {
   font-size: 15px;
-  color: #999;
+  color: #555;
   text-align: center;
   min-height: 18px;
   padding-bottom: 2px;
@@ -781,7 +781,7 @@ function setMode(m) {
     tipWrap.className     = 'tip-wrap visible';
     numWrap.style.display = '';
     dimCalcButtons(false);
-    ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn'].forEach(id =>
+    ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn','eqBtn'].forEach(id =>
       document.getElementById(id).classList.add('dimmed')
     );
     refreshTip();
@@ -1195,7 +1195,7 @@ function refreshTip() {
 
   // Update display area
   document.getElementById('exprEl').textContent =
-    bill ? `${tipBillStr} · ${pct}% · ${people} ${people === 1 ? 'person' : 'ppl'}` : '';
+    bill ? `${tipBillStr} · ${pct}% · ${people} ${people === 1 ? 'person' : 'ppl'}` : 'Enter bill amount';
 
   if (!bill) {
     setResult('0');
@@ -1208,9 +1208,9 @@ function refreshTip() {
   const total = bill + tip;
   const per   = total / people;
 
-  setResult('₪' + fmt(per));
+  setResult(fmt(per));
   document.getElementById('tipSummary').textContent =
-    `Tip ₪${fmt(tip)}  ·  Total ₪${fmt(total)}`;
+    `Tip ${fmt(tip)}  ·  Total ${fmt(total)}`;
 }
 
 // ── HISTORY ──────────────────────────────────────────────
