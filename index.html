@@ -346,6 +346,7 @@ body {
   .divider { flex-shrink: 0; }
   .sci-wrap { flex-shrink: 0; padding: 6px 8px 2px; }
   .curr-wrap { flex-shrink: 0; padding: 10px 8px 6px; }
+  .tip-wrap  { flex: 1; overflow-y: auto; padding: 12px 10px 16px; }
   .num-wrap {
     flex: 1;
     display: flex;
@@ -440,57 +441,13 @@ body {
 .hist-item-result { font-size: 22px; font-weight: 700; color: #222; }
 .hist-empty { text-align: center; color: #AAAAAA; font-size: 15px; padding: 40px 0; }
 
-/* ── TIP BUTTON ── */
-.tip-btn {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.6);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  flex-shrink: 0;
-  transition: color 0.15s;
-  user-select: none;
-}
-.tip-btn:hover  { color: rgba(255,255,255,0.9); }
-.display.sci .tip-btn  { opacity: 0; pointer-events: none; }
-.display.curr .tip-btn { opacity: 0; pointer-events: none; }
-
-/* ── TIP SHEET ── */
-.tip-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 115;
-  pointer-events: none;
-  transition: background 0.25s;
-}
-.tip-overlay.open {
-  background: rgba(0,0,0,0.45);
-  pointer-events: all;
-}
-.tip-panel {
-  width: min(360px, 100vw);
-  background: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 8px 20px 28px;
-  display: flex;
+/* ── TIP WRAP (inline mode) ── */
+.tip-wrap {
+  display: none;
   flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  padding: 14px 16px 20px;
 }
-.tip-overlay.open .tip-panel { transform: translateY(0); }
-.tip-handle {
-  width: 36px; height: 4px;
-  background: #E0E0E0; border-radius: 2px;
-  margin: 6px auto 18px;
-}
-.tip-title { font-size: 16px; font-weight: 600; color: #222; margin-bottom: 16px; }
+.tip-wrap.visible { display: flex; }
 .tip-row {
   display: flex;
   align-items: center;
@@ -508,7 +465,7 @@ body {
   outline: none;
   color: #222;
 }
-.tip-inp:focus { border-color: #C75F56; }
+.tip-inp:focus { border-color: #C49A3C; }
 .tip-divider { height: 1px; background: #F0F0F0; margin: 12px 0; }
 .tip-result-row {
   display: flex;
@@ -609,39 +566,8 @@ body {
     <div class="rate-line" id="rateLine">Loading rates...</div>
   </div>
 
-  <!-- Numeric section -->
-  <div class="num-wrap">
-    <div class="num-grid">
-      <button class="nb"     onclick="ins('7')">7</button>
-      <button class="nb"     onclick="ins('8')">8</button>
-      <button class="nb"     onclick="ins('9')">9</button>
-      <button class="nb txt" id="delBtn"  onclick="doDelete()">DEL</button>
-      <button class="nb txt" id="acBtn"   onclick="doClear()">AC</button>
-      <button class="nb"     onclick="ins('4')">4</button>
-      <button class="nb"     onclick="ins('5')">5</button>
-      <button class="nb"     onclick="ins('6')">6</button>
-      <button class="nb sym" id="mulBtn"  onclick="ins('×')">×</button>
-      <button class="nb sym" id="divBtn"  onclick="ins('÷')">÷</button>
-      <button class="nb"     onclick="ins('1')">1</button>
-      <button class="nb"     onclick="ins('2')">2</button>
-      <button class="nb"     onclick="ins('3')">3</button>
-      <button class="nb sym" id="addBtn"  onclick="ins('+')">+</button>
-      <button class="nb sym" id="subBtn"  onclick="ins('−')">−</button>
-      <button class="nb"     onclick="ins('0')">0</button>
-      <button class="nb"     onclick="ins('.')">.</button>
-      <button class="nb txt" id="signBtn" onclick="toggleSign()">+/-</button>
-      <button class="nb txt" id="ansBtn"  onclick="insAns()">Ans</button>
-      <button class="nb eq"  id="eqBtn"   onclick="doCalc()">=</button>
-    </div>
-  </div>
-
-</div>
-
-<!-- Tip Calculator -->
-<div class="tip-overlay" id="tipOverlay" onclick="handleTipOverlayBg(event)">
-  <div class="tip-panel">
-    <div class="tip-handle"></div>
-    <div class="tip-title">Tip Calculator</div>
+  <!-- Tips section -->
+  <div class="tip-wrap" id="tipWrap">
     <div class="tip-row">
       <span class="tip-lbl">Bill total</span>
       <input class="tip-inp" id="tipBill" type="number" inputmode="decimal" placeholder="0" oninput="calcTip()">
@@ -668,6 +594,33 @@ body {
       <span class="tip-result-val big" id="tipPer">—</span>
     </div>
   </div>
+
+  <!-- Numeric section -->
+  <div class="num-wrap" id="numWrap">
+    <div class="num-grid">
+      <button class="nb"     onclick="ins('7')">7</button>
+      <button class="nb"     onclick="ins('8')">8</button>
+      <button class="nb"     onclick="ins('9')">9</button>
+      <button class="nb txt" id="delBtn"  onclick="doDelete()">DEL</button>
+      <button class="nb txt" id="acBtn"   onclick="doClear()">AC</button>
+      <button class="nb"     onclick="ins('4')">4</button>
+      <button class="nb"     onclick="ins('5')">5</button>
+      <button class="nb"     onclick="ins('6')">6</button>
+      <button class="nb sym" id="mulBtn"  onclick="ins('×')">×</button>
+      <button class="nb sym" id="divBtn"  onclick="ins('÷')">÷</button>
+      <button class="nb"     onclick="ins('1')">1</button>
+      <button class="nb"     onclick="ins('2')">2</button>
+      <button class="nb"     onclick="ins('3')">3</button>
+      <button class="nb sym" id="addBtn"  onclick="ins('+')">+</button>
+      <button class="nb sym" id="subBtn"  onclick="ins('−')">−</button>
+      <button class="nb"     onclick="ins('0')">0</button>
+      <button class="nb"     onclick="ins('.')">.</button>
+      <button class="nb txt" id="signBtn" onclick="toggleSign()">+/-</button>
+      <button class="nb txt" id="ansBtn"  onclick="insAns()">Ans</button>
+      <button class="nb eq"  id="eqBtn"   onclick="doCalc()">=</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- History sheet -->
@@ -766,9 +719,6 @@ const ALL_CURRENCIES = [
 
 // ── MODE ─────────────────────────────────────────────────
 function setMode(m) {
-  // Close tip sheet silently when switching away
-  if (m !== 'tip') document.getElementById('tipOverlay').classList.remove('open');
-
   mode = m;
   const isSci  = m === 'sci';
   const isCurr = m === 'curr';
@@ -783,21 +733,29 @@ function setMode(m) {
 
   const sciWrap  = document.getElementById('sciWrap');
   const currWrap = document.getElementById('currWrap');
+  const tipWrap  = document.getElementById('tipWrap');
+  const numWrap  = document.getElementById('numWrap');
+
   if (isCurr) {
     sciWrap.style.display  = 'none';
     currWrap.className     = 'curr-wrap visible';
+    tipWrap.className      = 'tip-wrap';
+    numWrap.style.display  = '';
     dimCalcButtons(true);
     if (!Object.keys(rates).length) fetchRates(); else { rates['ILS'] = 1; refreshCurrencyDisplay(); refreshCurrency(); }
   } else if (isTip) {
     sciWrap.style.display = 'none';
     currWrap.className    = 'curr-wrap';
-    dimCalcButtons(true);
-    document.getElementById('tipOverlay').classList.add('open');
+    tipWrap.className     = 'tip-wrap visible';
+    numWrap.style.display = 'none';
     calcTip();
+    setTimeout(() => document.getElementById('tipBill').focus(), 300);
   } else {
     sciWrap.style.display  = isSci ? '' : 'none';
     currWrap.className     = 'curr-wrap';
+    tipWrap.className      = 'tip-wrap';
     sciWrap.className      = 'sci-wrap';
+    numWrap.style.display  = '';
     dimCalcButtons(false);
     refresh();
   }
@@ -1125,10 +1083,9 @@ document.querySelector('.calc').addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.querySelector('.calc').addEventListener('touchend', e => {
-  // Don't trigger when any overlay is open
+  // Don't trigger when currency or history overlay is open
   if (document.getElementById('overlay').classList.contains('open'))    return;
   if (document.getElementById('histOverlay').classList.contains('open')) return;
-  if (document.getElementById('tipOverlay').classList.contains('open'))  return;
 
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = e.changedTouches[0].clientY - swipeStartY;
@@ -1143,17 +1100,8 @@ document.querySelector('.calc').addEventListener('touchend', e => {
 }, { passive: true });
 
 // ── TIP CALCULATOR ───────────────────────────────────────
-function openTip() {
-  setMode('tip');
-  setTimeout(() => document.getElementById('tipBill').focus(), 300);
-}
-
 function closeTip() {
   setMode('norm');
-}
-
-function handleTipOverlayBg(e) {
-  if (e.target === document.getElementById('tipOverlay')) closeTip();
 }
 
 function calcTip() {
@@ -1263,7 +1211,7 @@ document.addEventListener('keydown', e => {
   if (k === '^')                    { ins('^'); return; }
   if (k === 'Enter' || k === '=')   { doCalc(); return; }
   if (k === 'Backspace')            { doDelete(); return; }
-  if (k === 'Escape')               { if (document.getElementById('tipOverlay').classList.contains('open')) closeTip(); else if (document.getElementById('histOverlay').classList.contains('open')) closeHistory(); else if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
+  if (k === 'Escape')               { if (mode === 'tip') closeTip(); else if (document.getElementById('histOverlay').classList.contains('open')) closeHistory(); else if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
 });
 
 // ── INIT ─────────────────────────────────────────────────
