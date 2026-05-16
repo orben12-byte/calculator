@@ -699,6 +699,10 @@ body {
     </div>
     <div class="tip-disp" id="tipDisp">
       <div class="tip-disp-row">
+        <span class="tip-disp-lbl">Bill</span>
+        <span class="tip-disp-val" id="tdBill">0</span>
+      </div>
+      <div class="tip-disp-row">
         <span class="tip-disp-lbl">Tip</span>
         <span class="tip-disp-val" id="tdTip">—</span>
       </div>
@@ -1507,6 +1511,9 @@ function refreshTip() {
   const people     = isCustomPpl
     ? Math.max(1, parseInt(document.getElementById('tipPplCustom').value) || 1)
     : tipPeople;
+
+  // Always show the live bill input
+  document.getElementById('tdBill').textContent = tipBillStr || '0';
 
   // Update tip display (in colored header area)
   if (!bill) {
