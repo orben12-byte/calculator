@@ -328,6 +328,52 @@ body {
 .curr-item-country { font-size: 13px; color: #999; }
 .curr-item-check { font-size: 16px; color: #4A8E7C; min-width: 20px; text-align: right; }
 
+/* ── TIP DISPLAY (3 labeled rows in display area) ── */
+.tip-disp {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+.display.tip .tip-disp { display: flex; }
+.display.tip .expr     { display: none; }
+.display.tip .result   { display: none; }
+.display.tip .hist-btn { opacity: 0; pointer-events: none; }
+
+.tip-disp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.tip-disp-lbl {
+  font-size: 15px;
+  color: rgba(255,255,255,0.65);
+  font-weight: 500;
+}
+.tip-disp-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: -0.5px;
+}
+.tip-disp-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.25);
+  margin: 6px 0 4px;
+}
+.tip-disp-row.main .tip-disp-lbl {
+  font-size: 17px;
+  color: #fff;
+  font-weight: 600;
+}
+.tip-disp-row.main .tip-disp-val {
+  font-size: 42px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -1.5px;
+  cursor: pointer;
+}
+
 /* ── UNIT DISPLAY (reuses curr-ab pattern) ── */
 .unit-ab {
   display: none;
@@ -432,12 +478,12 @@ body {
 
 /* ── CURRENCY RATE HINT ── */
 .curr-rate-hint {
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  max-width: 150px;
 }
 
 @media (max-width: 480px) {
@@ -651,6 +697,21 @@ body {
       <button class="hist-btn" id="histBtn" onclick="openHistory()">🕐</button>
       <div class="expr" id="exprEl"></div>
     </div>
+    <div class="tip-disp" id="tipDisp">
+      <div class="tip-disp-row">
+        <span class="tip-disp-lbl">Tip</span>
+        <span class="tip-disp-val" id="tdTip">—</span>
+      </div>
+      <div class="tip-disp-row">
+        <span class="tip-disp-lbl">Total</span>
+        <span class="tip-disp-val" id="tdTotal">—</span>
+      </div>
+      <div class="tip-disp-divider"></div>
+      <div class="tip-disp-row main" onclick="copyTipResult()">
+        <span class="tip-disp-lbl">Per person</span>
+        <span class="tip-disp-val" id="tdPer">—</span>
+      </div>
+    </div>
     <div class="unit-ab" id="unitAB">
       <div class="unit-row" onclick="openUnitOverlay('from')">
         <span class="unit-row-icon" id="unitFromIcon">📏</span>
@@ -770,7 +831,6 @@ body {
       <span class="tip-lbl">Custom</span>
       <input class="tip-inp" id="tipPplCustom" type="number" inputmode="numeric" min="1" placeholder="#" oninput="refreshTip()">
     </div>
-    <div class="tip-summary" id="tipSummary"></div>
   </div>
 
   <!-- Numeric section -->
@@ -858,8 +918,9 @@ const UNIT_DATA = {
     { code:'km',  name:'Kilometer',   f:1000     },
     { code:'m',   name:'Meter',       f:1        },
     { code:'cm',  name:'Centimeter',  f:0.01     },
-    { code:'mm',  name:'Millimeter',  f:0.001    },
-    { code:'mi',  name:'Mile',        f:1609.344 },
+    { code:'mm',  name:'Millimeter',  f:0.001      },
+    { code:'µm',  name:'Micrometer',  f:0.000001   },
+    { code:'mi',  name:'Mile',        f:1609.344   },
     { code:'ft',  name:'Foot',        f:0.3048   },
     { code:'in',  name:'Inch',        f:0.0254   },
     { code:'yd',  name:'Yard',        f:0.9144   },
@@ -1429,6 +1490,13 @@ function openCustomPeople(btn) {
   setTimeout(() => document.getElementById('tipPplCustom').focus(), 100);
 }
 
+function copyTipResult() {
+  const val = document.getElementById('tdPer').textContent;
+  if (!val || val === '—') return;
+  navigator.clipboard.writeText(val).catch(() => {});
+  showToast('Copied!');
+}
+
 function refreshTip() {
   const bill       = parseFloat(tipBillStr) || 0;
   const isCustomPct = document.getElementById('tipCustomRow').classList.contains('open');
@@ -1440,14 +1508,11 @@ function refreshTip() {
     ? Math.max(1, parseInt(document.getElementById('tipPplCustom').value) || 1)
     : tipPeople;
 
-  // Update display area
-  const perLabel = people === 1 ? 'total' : 'per person';
-  document.getElementById('exprEl').textContent =
-    bill ? `${tipBillStr} · ${pct}% → ${perLabel}` : 'Enter bill amount';
-
+  // Update tip display (in colored header area)
   if (!bill) {
-    setResult('0');
-    document.getElementById('tipSummary').textContent = '';
+    document.getElementById('tdTip').textContent   = '—';
+    document.getElementById('tdTotal').textContent = '—';
+    document.getElementById('tdPer').textContent   = '—';
     return;
   }
 
@@ -1456,9 +1521,13 @@ function refreshTip() {
   const total = bill + tip;
   const per   = total / people;
 
-  setResult(fmt(per));
-  document.getElementById('tipSummary').textContent =
-    `Tip ${fmt(tip)}  ·  Total ${fmt(total)}`;
+  document.getElementById('tdTip').textContent   = fmt(tip);
+  document.getElementById('tdTotal').textContent = fmt(total);
+  document.getElementById('tdPer').textContent   = fmt(per);
+
+  // Update Per person label dynamically
+  document.querySelector('.tip-disp-row.main .tip-disp-lbl').textContent =
+    people === 1 ? 'Total' : 'Per person';
 }
 
 // ── UNIT CONVERTER ───────────────────────────────────────
