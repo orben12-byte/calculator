@@ -724,7 +724,7 @@ body {
         <span class="unit-row-amt"  id="unitFromAmt">0</span>
       </div>
       <div class="unit-swap-line">
-        <button class="curr-swap-btn" onclick="swapUnits()">↑↓</button>
+        <button class="curr-swap-btn" onclick="swapUnits()" aria-label="Swap units">↑↓</button>
       </div>
       <div class="unit-row" onclick="openUnitOverlay('to')">
         <span class="unit-row-icon" id="unitToIcon">📏</span>
@@ -741,7 +741,7 @@ body {
         <span class="curr-row-amt"  id="currFromAmt">0</span>
       </div>
       <div class="curr-swap-line">
-        <button class="curr-swap-btn" onclick="swapCurrencies()">↑↓</button>
+        <button class="curr-swap-btn" onclick="swapCurrencies()" aria-label="Swap currencies">↑↓</button>
         <span class="curr-rate-hint" id="currRateHint"></span>
       </div>
       <div class="curr-row" onclick="openOverlay('to')">
@@ -1065,10 +1065,7 @@ function setMode(m) {
     tipWrap.className     = 'tip-wrap visible';
     unitWrap.className    = 'unit-wrap';
     numWrap.style.display = '';
-    dimCalcButtons(false);
-    ['mulBtn','divBtn','addBtn','subBtn','signBtn','ansBtn','eqBtn'].forEach(id =>
-      document.getElementById(id).classList.add('dimmed')
-    );
+    dimCalcButtons(true);
     refreshTip();
   } else if (isUnit) {
     sciWrap.style.display  = 'none';
@@ -1224,6 +1221,7 @@ function doCalc() {
 }
 
 function evalExpr(str) {
+  if (!/^[\d\s.+\-×÷−()^ a-zA-Z,]+$/.test(str)) throw new Error('Invalid');
   const s = str
     .replace(/×/g,          '*')
     .replace(/÷/g,          '/')
@@ -1604,12 +1602,20 @@ function fmtUnitResult(n) {
   return parseFloat(n.toPrecision(7)).toString();
 }
 
+function parseDisplayNum(str) {
+  if (!str || str === '0' || str === '—') return null;
+  const s = str.replace(/,/g, '');
+  if (s.endsWith('B')) return parseFloat(s) * 1e9;
+  if (s.endsWith('M')) return parseFloat(s) * 1e6;
+  return parseFloat(s);
+}
+
 function swapUnits() {
   [unitFrom, unitTo] = [unitTo, unitFrom];
-  // Mirror: new FROM = old TO result, if unitExpr was set
   const oldTo = document.getElementById('unitToAmt').textContent;
   if (unitExpr && oldTo !== '0' && oldTo !== '—') {
-    unitExpr = oldTo;
+    const parsed = parseDisplayNum(oldTo);
+    if (parsed !== null && isFinite(parsed)) unitExpr = String(parsed);
   }
   refreshUnitDisplay();
   refreshUnit();
@@ -1696,7 +1702,8 @@ function renderHistory() {
 
 function loadFromHistory(item) {
   expr    = item.result;
-  lastAns = parseFloat(item.result.replace(/,/g, ''));
+  const n = parseFloat(item.result.replace(/,/g, ''));
+  lastAns = isFinite(n) ? n : null;
   afterEq = true;
   refresh();
   closeHistory();
@@ -1740,7 +1747,7 @@ document.addEventListener('keydown', e => {
   if (k === '^')                    { ins('^'); return; }
   if (k === 'Enter' || k === '=')   { doCalc(); return; }
   if (k === 'Backspace')            { doDelete(); return; }
-  if (k === 'Escape')               { if (mode === 'tip') closeTip(); else if (document.getElementById('histOverlay').classList.contains('open')) closeHistory(); else if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
+  if (k === 'Escape')               { if (document.getElementById('histOverlay').classList.contains('open')) closeHistory(); else if (document.getElementById('overlay').classList.contains('open')) closeOverlay(); else doClear(); return; }
 });
 
 // ── INIT ─────────────────────────────────────────────────
